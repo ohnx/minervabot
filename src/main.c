@@ -1,42 +1,24 @@
 #include <stdio.h>
-#include <unistd.h>
-#include <string.h>
-#include <netdb.h>
+#include "common.h"
+#include "netabs.h"
 
-int conn;
-char sbuf[512];
-
-void raw(char *fmt, ...) {
-    va_list ap;
-    va_start(ap, fmt);
-    vsnprintf(sbuf, 512, fmt, ap);
-    va_end(ap);
-    printf("<< %s", sbuf);
-    write(conn, sbuf, strlen(sbuf));
-}
+static char sbuf[512];
 
 int main() {
-    char *nick = "test";
-    char *channel = NULL;
-    char *host = "irc.dav7.net";
+    char *channel = "##ohnx";
+    char *host = "irc.freenode.net";
     char *port = "6667";
     
     char *user, *command, *where, *message, *sep, *target;
     int i, j, l, sl, o = -1, start, wordcount;
     char buf[513];
-    struct addrinfo hints, *res;
     
-    memset(&hints, 0, sizeof hints);
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_STREAM;
-    getaddrinfo(host, port, &hints, &res);
-    conn = socket(res->ai_family, res->ai_socktype, res->ai_protocol);
-    connect(conn, res->ai_addr, res->ai_addrlen);
+    /* single threaded for now */
+    bot_context *bc;
     
-    raw("USER %s 0 0 :%s\r\n", nick, nick);
-    raw("NICK %s\r\n", nick);
+    bc = bot_connect_new(host, port);
     
-    while ((sl = read(conn, sbuf, 512))) {
+    while ((sl = read(bc->conn, sbuf, 512))) {
         for (i = 0; i < sl; i++) {
             o++;
             buf[o] = sbuf[i];
@@ -49,7 +31,7 @@ int main() {
                 
                 if (!strncmp(buf, "PING", 4)) {
                     buf[1] = 'O';
-                    raw(buf);
+                    raw(bc, buf);
                 } else if (buf[0] == ':') {
                     wordcount = 0;
                     user = command = where = message = NULL;
@@ -73,13 +55,15 @@ int main() {
                     if (wordcount < 2) continue;
                     
                     if (!strncmp(command, "001", 3) && channel != NULL) {
-                        raw("JOIN %s\r\n", channel);
+                        joinchan(bc, channel);
+                        raw_va(bc, AUTORUN_COMMAND"\r\n");
+                    } else if (0 /*433 nick needs changing*/) {
+                        
                     } else if (!strncmp(command, "PRIVMSG", 7) || !strncmp(command, "NOTICE", 6)) {
                         if (where == NULL || message == NULL) continue;
                         if ((sep = strchr(user, '!')) != NULL) user[sep - user] = '\0';
                         if (where[0] == '#' || where[0] == '&' || where[0] == '+' || where[0] == '!') target = where; else target = user;
                         printf("[from: %s] [reply-with: %s] [where: %s] [reply-to: %s] %s", user, command, where, target, message);
-                        //raw("%s %s :%s", command, target, message); // If you enable this the IRCd will get its "*** Looking up your hostname..." messages thrown back at it but it works...
                     }
                 }
                 
