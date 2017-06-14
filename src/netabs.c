@@ -2,6 +2,7 @@
 static char sbuf[512];
 
 void net_raw(bot_context *bc, const char *str) {
+    printf("<< %s\n", str);
     write(bc->conn, str, strlen(str));
     write(bc->conn, "\r\n", 2);
 }
@@ -16,13 +17,10 @@ void net_raw_va(bot_context *bc, const char *fmt, ...) {
     write(bc->conn, "\r\n", 2);
 }
 
-void net_raw_val(bot_context *bc, const char *fmt, va_list ap) {
-    
-}
-
 void bot_initsetup(bot_context *bc) {
-    raw_va(bc, "USER %s 8 * :%s", BOT_USER, "minervabot; athenabot reborn!");
-    raw_va(bc, "NICK %s", DEFAULT_BOT_NICK);
+    net_raw(bc, PRECONNECT_COMMAND);
+    net_raw(bc, "USER "BOT_USER"8 * :minervabot; athenabot reborn!");
+    net_raw(bc, "NICK "DEFAULT_BOT_NICK);
 }
 
 bot_context *bot_connect(const char *host, const char *port) {

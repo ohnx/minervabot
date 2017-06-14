@@ -6,8 +6,8 @@ static char sbuf[512];
 
 int main() {
     char *channel = "##ohnx";
-    char *host = "irc.freenode.net";
-    char *port = "6667";
+    char *host = "127.0.0.1";
+    char *port = "1338";
     
     char *user, *command, *where, *message, *sep, *target;
     int i, j, l, sl, o = -1, start, wordcount;
@@ -16,7 +16,7 @@ int main() {
     /* single threaded for now */
     bot_context *bc;
     
-    bc = bot_connect_new(host, port);
+    bc = bot_connect(host, port);
     
     while ((sl = read(bc->conn, sbuf, 512))) {
         for (i = 0; i < sl; i++) {
@@ -31,7 +31,7 @@ int main() {
                 
                 if (!strncmp(buf, "PING", 4)) {
                     buf[1] = 'O';
-                    raw(bc, buf);
+                    net_raw(bc, buf);
                 } else if (buf[0] == ':') {
                     wordcount = 0;
                     user = command = where = message = NULL;
@@ -55,8 +55,8 @@ int main() {
                     if (wordcount < 2) continue;
                     
                     if (!strncmp(command, "001", 3) && channel != NULL) {
-                        joinchan(bc, channel);
-                        raw_va(bc, AUTORUN_COMMAND"\r\n");
+                        bot_joinchan(bc, channel);
+                        net_raw(bc, POSTCONNECT_COMMAND);
                     } else if (0 /*433 nick needs changing*/) {
                         
                     } else if (!strncmp(command, "PRIVMSG", 7) || !strncmp(command, "NOTICE", 6)) {

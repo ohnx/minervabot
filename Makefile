@@ -7,8 +7,8 @@ OBJ=netabs.o main.o
 MODULESOBJ=simple.o
 
 dirs:
-	mkdir -p bin/
-	mkdir -p bin/modules
+	@mkdir -p bin/
+	@mkdir -p bin/modules
 
 %.o: src/%.c
 	$(CC) -c -o $@ $< $(CFLAGS) $(EXTRA)

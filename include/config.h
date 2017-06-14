@@ -3,6 +3,7 @@
 
 #define DEFAULT_BOT_NICK "minervabot"
 #define BOT_USER "minerva"
-#define AUTORUN_COMMAND "PRIVMSG NickServ :identify athenabot athenabot123"
+#define PRECONNECT_COMMAND "PASS minervabot:password"
+#define POSTCONNECT_COMMAND ""
 
 #endif
