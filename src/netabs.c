@@ -18,8 +18,10 @@ void net_raw_va(bot_context *bc, const char *fmt, ...) {
 }
 
 void bot_initsetup(bot_context *bc) {
+#ifdef PRECONNECT_COMMAND
     net_raw(bc, PRECONNECT_COMMAND);
-    net_raw(bc, "USER "BOT_USER"8 * :minervabot; athenabot reborn!");
+#endif
+    net_raw(bc, "USER "BOT_USER" 8 * :minervabot; athenabot reborn!");
     net_raw(bc, "NICK "DEFAULT_BOT_NICK);
 }
 

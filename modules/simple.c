@@ -1,5 +1,6 @@
 #include "common.h"
 #include "module.h"
+#include <stdio.h>
 
 module_call_table *calls;
 

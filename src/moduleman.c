@@ -28,3 +28,4 @@ module_call_table *gen_call_table() {
     
     return mct;
 }
+

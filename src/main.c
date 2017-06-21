@@ -6,12 +6,14 @@ static char sbuf[512];
 
 int main() {
     char *channel = "##ohnx";
-    char *host = "127.0.0.1";
-    char *port = "1338";
+    char *host = "irc.freenode.net";
+    char *port = "6667";
     
     char *user, *command, *where, *message, *sep, *target;
     int i, j, l, sl, o = -1, start, wordcount;
     char buf[513];
+    
+    
     
     /* single threaded for now */
     bot_context *bc;
@@ -56,9 +58,16 @@ int main() {
                     
                     if (!strncmp(command, "001", 3) && channel != NULL) {
                         bot_joinchan(bc, channel);
+#ifdef POSTCONNECT_COMMAND
                         net_raw(bc, POSTCONNECT_COMMAND);
-                    } else if (0 /*433 nick needs changing*/) {
-                        
+#endif
+                    } else if (!strncmp(command, "433" ,3)) { // TODO: Test
+                        unsigned int nicklen = strlen(bc->nick);
+                        char *newnick = calloc(nicklen+2, sizeof(char)); // +1 for _ +1 for null
+                        strcpy(newnick, bc->nick);
+                        newnick[nicklen] = '_';
+                        bot_changenick(bc, newnick);
+                        free(newnick);
                     } else if (!strncmp(command, "PRIVMSG", 7) || !strncmp(command, "NOTICE", 6)) {
                         if (where == NULL || message == NULL) continue;
                         if ((sep = strchr(user, '!')) != NULL) user[sep - user] = '\0';
