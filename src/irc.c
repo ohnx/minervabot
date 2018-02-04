@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <stdarg.h>
 #include "common.h"
 #include "net.h"
 #include "irc.h"
@@ -16,6 +17,17 @@ void irc_filter(char *str) {
 
 void irc_message(const char *chan, const char *message) {
     net_raw("PRIVMSG %s :%s\r\n", chan, message);
+}
+
+void irc_message_va(const char *chan, const char *fmt, ...) {
+    char *tmp;
+    va_list ap;
+    va_start(ap, fmt);
+    vsnprintf(sbuf, 512, fmt, ap);
+    va_end(ap);
+    tmp = strdup(sbuf);
+    if (tmp) irc_message(chan, tmp);
+    free(tmp);
 }
 
 void irc_action(const char *chan, const char *message) {

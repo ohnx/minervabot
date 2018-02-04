@@ -4,6 +4,7 @@
 
 void irc_filter(char *str);
 void irc_message(const char *chan, const char *message);
+void irc_message_va(const char *chan, const char *fmt, ...);
 void irc_action(const char *chan, const char *message);
 void irc_join(const char *chan);
 void irc_part(const char *chan, const char *message);

@@ -13,6 +13,10 @@ default: objs/modules/ modules/ $(OUTPUT) $(OUTP_MOD)
 debug: CFLAGS+=-g -O0
 debug: default
 
+asan: CFLAGS+=-fsanitize=address
+asan: LDFLAGS+=-fsanitize=address
+asan: debug
+
 # directories
 objs/:
 	@mkdir -p $@
@@ -46,5 +50,9 @@ clean:
 	@rm $(OUTPUT) > /dev/null 2>&1 || true
 
 .PHONY: test
-test: debug
-	BOT_NICK=minervabot BOT_USER=minerva BOT_NAME="minervabot" BOT_NETWORK_HOST="irc.freenode.net" BOT_NETWORK_PORT="6667" valgrind --leak-check=full --show-leak-kinds=all ./$(OUTPUT) "#-"
+test: clean debug
+	BOT_NICK=minervabot BOT_USER=minerva BOT_NAME="minervabot" BOT_NETWORK_HOST="irc.freenode.net" BOT_NETWORK_PORT="6667" valgrind --leak-check=full --show-leak-kinds=all ./$(OUTPUT) "#="
+
+.PHONY: testa
+testa: clean asan
+	BOT_NICK=minervabot BOT_USER=minerva BOT_NAME="minervabot" BOT_NETWORK_HOST="irc.freenode.net" BOT_NETWORK_PORT="6667" ./$(OUTPUT) "#="

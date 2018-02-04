@@ -18,6 +18,11 @@ void net_raw(const char *fmt, ...) {
     write(conn, sbuf, strlen(sbuf));
 }
 
+void net_raws(char *ptr) {
+    printf("<< %s", ptr);
+    write(conn, ptr, strlen(ptr));
+}
+
 void net_connect(const char *host, const char *port) {
     struct addrinfo hints, *res;
 

@@ -5,8 +5,10 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <string.h>
+#include "logger.h"
 #include "module.h"
 #include "modules.h"
+#include "permissions.h"
 #include "irc.h"
 
 /* command prefixes */
@@ -156,18 +158,28 @@ struct core_ctx *modules_ctx_new(void *dlsym) {
     ctx->register_cmd = &modules_register_cmd;
     ctx->unregister_cmd = &modules_unregister_cmd;
 
+    /* logger.h commands */
+    ctx->log = &logger_log;
+
+    /* permissions.h commands */
+    ctx->setperms = &permissions_set;
+    ctx->getperms = &permissions_get;
+
     /* irc.h commands */
     ctx->mksafe = &irc_filter;
     ctx->msg = &irc_message;
+    ctx->msgva = &irc_message_va;
     ctx->action = &irc_action;
     ctx->join = &irc_join;
     ctx->part = &irc_part;
     ctx->chmode = &irc_chmode;
     ctx->kick = &irc_kick;
     ctx->raw = &irc_raw;
+    ctx->raw_va = &net_raw;
 
     /* internal stuff */
     ctx->dlsym = dlsym;
+    ctx->perm_map = permissions_getmap();
 
     return ctx;
 }

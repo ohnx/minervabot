@@ -6,10 +6,11 @@
 #include "net.h"
 #include "irc.h"
 #include "modules.h"
+#include "permissions.h"
 
 volatile sig_atomic_t done = 0;
  
-void term(int signum) {
+void cleanup(int signum) {
     done = 1;
 }
 
@@ -34,13 +35,17 @@ int main(int argc, char **argv) {
 
     if (argc == 1) fprintf(stderr, "warning: not joining any channels\n");
 
+    permissions_init();
+
     modules_init();
     modules_rescan();
 
     /* catch sigterms */
     memset(&action, 0, sizeof(struct sigaction));
-    action.sa_handler = term;
+    action.sa_handler = cleanup;
     sigaction(SIGTERM, &action, NULL);
+    sigaction(SIGHUP, &action, NULL);
+    sigaction(SIGINT, &action, NULL);
 
     /* network stuff */
 loop_retry:
@@ -71,6 +76,7 @@ loop_retry:
         /* program received SIGTERM, clean up modules */
         fprintf(stderr, "Cleaning up...\n");
         modules_destroy();
+        permissions_cleanup();
         return 0;
     }
 
