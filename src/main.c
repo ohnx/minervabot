@@ -49,6 +49,14 @@ int main(int argc, char **argv) {
 
     /* network stuff */
 loop_retry:
+    if (done) {
+        /* program received SIGTERM, clean up modules */
+        fprintf(stderr, "Cleaning up...\n");
+        modules_destroy();
+        permissions_cleanup();
+        return 0;
+    }
+
     /* Wait a few (10) seconds before trying to reconnect */
     if (fst++) usleep(10000000);
 
@@ -71,14 +79,6 @@ loop_retry:
 
     irc_loop();
     net_disconnect();
-
-    if (done) {
-        /* program received SIGTERM, clean up modules */
-        fprintf(stderr, "Cleaning up...\n");
-        modules_destroy();
-        permissions_cleanup();
-        return 0;
-    }
 
     goto loop_retry;
 

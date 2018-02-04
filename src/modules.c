@@ -27,7 +27,7 @@ int modules_register_cmd(const char *cmdname, command_handler handler) {
     struct command_tree *ptr = &cmds;
     char real;
 
-    fprintf(stderr, "registering command `%s`\n", cmdname);
+    logger_log(INFO, "commands", "registering command `%s`", cmdname);
 
     /* walk the tree! */
     while (ptr) {
@@ -127,7 +127,7 @@ void modules_check_cmd(char *from, char *where, char *message) {
             if (ptr->handler != NULL) {
                 *(message - 1) = '\0';
                 if (real == '\0') message--;
-                printf("i found a command! %s\n", message_orig);
+                logger_log(INFO, "commands", "Running command %s", message_orig);
                 ptr->handler(message_orig, where, from, message);
             } else {
                 break;
@@ -179,7 +179,6 @@ struct core_ctx *modules_ctx_new(void *dlsym) {
 
     /* internal stuff */
     ctx->dlsym = dlsym;
-    ctx->perm_map = permissions_getmap();
 
     return ctx;
 }
@@ -207,14 +206,14 @@ void modules_loadmod(const char *mod_file) {
     handle = dlopen(local_file, RTLD_LAZY);
     free(local_file);
     if (!handle) {
-        fprintf (stderr, "warning: failed to load module %s: %s\n", mod_file, dlerror());
+        logger_log(WARN, "commands", "failed to load module %s: %s", mod_file, dlerror());
         return;
     }
     dlerror();
 
     inith = dlsym(handle, "module_init");
     if ((error = dlerror()) != NULL)  {
-        fprintf (stderr, "warning: failed to load module %s: %s\n", mod_file, error);
+        logger_log(WARN, "commands", "failed to load module %s: %s", mod_file, error);
         return;
     }
 
@@ -224,7 +223,7 @@ void modules_loadmod(const char *mod_file) {
         loaded_len *= 2;
         tmp = realloc(loaded, loaded_len * sizeof(void *));
         if (tmp == NULL) {
-            fprintf(stderr, "warning: system out of memory; failed to load module\n");
+            logger_log(WARN, "commands", "system out of memory; failed to load module");
             dlclose(handle);
             return;
         }
@@ -245,7 +244,7 @@ void modules_unloadmod(struct core_ctx *ctx) {
 
     cleanuph = dlsym(ctx->dlsym, "module_cleanup");
     if ((error = dlerror()) != NULL)  {
-        fprintf (stderr, "warning: failed clean up module: %s\n", error);
+        logger_log(WARN, "commands", "failed clean up module: %s", error);
         dlclose(ctx->dlsym);
         return;
     }
@@ -269,10 +268,10 @@ void modules_rescan() {
         if (*(dir->d_name) == '.') continue;
         c = strrchr(dir->d_name, '.');
         if (c != NULL && *(++c) == 's' && *(++c) == 'o') {
-            fprintf(stderr, "info: loading module `%s`\n", dir->d_name);
+            logger_log(INFO, "commands", "loading module `%s`", dir->d_name);
             modules_loadmod(dir->d_name);
         } else {
-            fprintf(stderr, "warning: non-module file `%s` in modules directory\n", dir->d_name);
+            logger_log(WARN, "commands", "non-module file `%s` in modules directory", dir->d_name);
         }
     }
 
@@ -301,7 +300,7 @@ void modules_init() {
     if (!mod_dir) mod_dir = "modules/";
 
     if (chdir(mod_dir)) {
-        fprintf(stderr, "error: failed to change to modules directory\n");
+        logger_log(ERROR, "commands", "error: failed to change to modules directory");
     }
 
     /* initialize loaded variable */
@@ -309,7 +308,7 @@ void modules_init() {
 
     /* get prefix length */
     if (cmdprefix == NULL) {
-        fprintf(stderr, "warning: command prefix not set, defaulting to ,\n");
+        logger_log(WARN, "commands", "command prefix not set, defaulting to ,");
         cmdprefix = ",";
     }
     cmdprefix_len = strlen(cmdprefix);

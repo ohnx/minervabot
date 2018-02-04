@@ -2,12 +2,13 @@
 #include <unistd.h>
 #include <limits.h>
 #include "hashmap.h"
+#include "logger.h"
 #include "permissions.h"
 
-int wtf = 0;
 hashmap *perm_map;
+/* without this magic variable, somehow, the value of perm_map will change... not sure why. */
+void *magic_variable;
 
-#include <stdio.h>
 void permissions_init() {
     const char *owner_host;
     perm_map = hashmap_new();
@@ -22,20 +23,15 @@ void permissions_init() {
     /* TODO - load more permissions */
 }
 
-void permissions_set(struct core_ctx *ctx, const char *host, int level) {
-    hashmap_put(ctx->perm_map, host, level);
+void permissions_set(const char *host, int level) {
+    if (hashmap_get(perm_map, host) != 0) hashmap_remove(perm_map, host);
+    hashmap_put(perm_map, host, level);
 }
 
-int permissions_get(struct core_ctx *ctx, const char *host) {
-    return hashmap_get(ctx->perm_map, host);
-}
-
-void *permissions_getmap() {
-    printf("perm map right now: %p\n", perm_map);
-    return perm_map;
+int permissions_get(const char *host) {
+    return hashmap_get(perm_map, host);
 }
 
 void permissions_cleanup() {
-    printf("it changed again :/ %d %p\n", wtf, perm_map);
     hashmap_destroy(perm_map);
 }

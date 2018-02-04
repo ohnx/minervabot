@@ -29,9 +29,9 @@ struct core_ctx {
 
     /* permissions.h commands */
     /* set permissions for a host to <level> */
-    void (*setperms)(struct core_ctx *ctx, const char *host, int level);
+    void (*setperms)(const char *host, int level);
     /* get permissions for a host */
-    int (*getperms)(struct core_ctx *ctx, const char *host);
+    int (*getperms)(const char *host);
 
     /* irc.h commands */
     /* remove \r and \n from the string */
@@ -58,7 +58,6 @@ struct core_ctx {
     /* internal stuff */
     /* handle from dlopen */
     void *dlsym;
-    void *perm_map;
 };
 
 /**

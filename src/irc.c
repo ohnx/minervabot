@@ -58,7 +58,8 @@ void irc_raw(const char *message) {
 }
 
 int irc_login(const char *user, const char *realname, const char *nick_t) {
-    int login_success = 0, nicklen = strlen(nick_t), i, rl;
+    char buf[513];
+    int login_success = 0, nicklen = strlen(nick_t), i, rl, j, o = 0;
 
     /* we may need to make changes to nick */
     char *nick = malloc((nicklen < 20 ? 20 : nicklen) + 1);
@@ -69,25 +70,44 @@ int irc_login(const char *user, const char *realname, const char *nick_t) {
     net_raw("NICK %s\r\n", nick);
 
     while ((rl = net_recv()) > 2) {
-        sbuf[rl] = 0;
-        printf(">> %s", sbuf);
-        /* handle initial codes */
-        for (i = 1; i < rl; i++) {
-            if (sbuf[i-1] != ' ') continue;
-            if (sbuf[i] == '0') {
-                /* sign in OK */
-                login_success = 1;
-            } else if (sbuf[i] == '4') {
-                /* Nickname error */
-                if (i+2 < rl && sbuf[i+2] == '3' && nicklen < 20) {
-                    /* Nick already in use, append a _ */
-                    nick[nicklen++] = '_';
-                    net_raw("NICK %s\r\n", nick);
-                } else {
-                    /* some other erroneous nickname; send a random nick */
-                    net_raw("NICK bphsd\r\n");
+        for (j = 0; j < rl; j++) {
+            buf[o] = sbuf[j];
+            if ((j > 0 && sbuf[j] == '\n' && sbuf[j - 1] == '\r') || o == 512) {
+                /* found a line */
+                buf[o] = '\0';
+                printf(">> %s", buf);
+                /* handle initial codes */
+                for (i = 1; i < o; i++) {
+                    printf(":%c\n", buf[i-1]);
+                    if (buf[i-1] != ' ') {
+                        if (buf[i] == 'I') {
+                            /* some ircd's send pings so we have to handle them */
+                            buf[1] = 'O';
+                            net_raw("%s\r\n", buf);
+                        } else {
+                            continue;
+                        }
+                    }
+                    if (buf[i] == '0') {
+                        /* sign in OK */
+                        login_success = 1;
+                    } else if (buf[i] == '4') {
+                        /* Nickname error */
+                        if (i+2 < rl && buf[i+2] == '3' && nicklen < 20) {
+                            /* Nick already in use, append a _ */
+                            nick[nicklen++] = '_';
+                            nick[nicklen] = '\0';
+                            net_raw("NICK %s\r\n", nick);
+                        } else {
+                            /* some other erroneous nickname; send a random nick */
+                            net_raw("NICK bphsd\r\n");
+                        }
+                    }
                 }
+                o = 0;
+                continue;
             }
+            o++;
         }
         if (login_success) break;
     }
