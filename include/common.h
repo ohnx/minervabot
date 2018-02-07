@@ -6,5 +6,6 @@
 
 #include <signal.h>
 extern volatile sig_atomic_t done;
+extern volatile sig_atomic_t srel;
 
 #endif /* __DEBUG_H */

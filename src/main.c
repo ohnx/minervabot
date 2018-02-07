@@ -9,9 +9,11 @@
 #include "permissions.h"
 
 volatile sig_atomic_t done = 0;
- 
+volatile sig_atomic_t srel = 0;
+
 void cleanup(int signum) {
-    done = 1;
+    if (signum == SIGUSR1) srel = 1;
+    else done = 1;
 }
 
 int main(int argc, char **argv) {
@@ -38,7 +40,7 @@ int main(int argc, char **argv) {
     permissions_init();
 
     modules_init();
-    modules_rescan();
+    modules_rescanall();
 
     /* catch sigterms */
     memset(&action, 0, sizeof(struct sigaction));
@@ -46,13 +48,14 @@ int main(int argc, char **argv) {
     sigaction(SIGTERM, &action, NULL);
     sigaction(SIGHUP, &action, NULL);
     sigaction(SIGINT, &action, NULL);
+    sigaction(SIGUSR1, &action, NULL);
 
     /* network stuff */
 loop_retry:
     if (done) {
         /* program received SIGTERM, clean up modules */
         fprintf(stderr, "Cleaning up...\n");
-        modules_destroy();
+        modules_deinit();
         permissions_cleanup();
         return 0;
     }

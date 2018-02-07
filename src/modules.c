@@ -96,6 +96,7 @@ void modules_cmds_clean(struct command_tree *root) {
         if (root->children[i] != NULL) {
             modules_cmds_clean(root->children[i]);
             free(root->children[i]);
+            root->children[i] = NULL;
         }
     }
 }
@@ -254,10 +255,13 @@ void modules_unloadmod(struct core_ctx *ctx) {
 }
 
 /* public functions */
-void modules_rescan() {
+void modules_rescanall() {
     DIR *folder;
     struct dirent *dir;
     const char *c;
+
+    /* check that the modules have not already been loaded */
+    if (loaded_use > 0) modules_unloadall();
 
     /* open folder */
     folder = opendir(".");
@@ -279,7 +283,7 @@ void modules_rescan() {
     closedir(folder);
 }
 
-void modules_destroy() {
+void modules_unloadall() {
     int i;
 
     /* clean up module lists */
@@ -287,11 +291,16 @@ void modules_destroy() {
         modules_unloadmod((struct core_ctx *)loaded[i]);
         free(loaded[i]);
     }
-    free(loaded);
     loaded_use = 0;
     loaded_len = 6;
+    loaded = realloc(loaded, loaded_len * sizeof(void *));
 
     modules_cmds_clean(&cmds);
+}
+
+void modules_deinit() {
+    modules_unloadall();
+    free(loaded);
 }
 
 void modules_init() {

@@ -75,12 +75,10 @@ int irc_login(const char *user, const char *realname, const char *nick_t) {
             if ((j > 0 && sbuf[j] == '\n' && sbuf[j - 1] == '\r') || o == 512) {
                 /* found a line */
                 buf[o] = '\0';
-                printf(">> %s", buf);
                 /* handle initial codes */
                 for (i = 1; i < o; i++) {
-                    printf(":%c\n", buf[i-1]);
                     if (buf[i-1] != ' ') {
-                        if (buf[i] == 'I') {
+                        if (buf[1] == 'I') {
                             /* some ircd's send pings so we have to handle them */
                             buf[1] = 'O';
                             net_raw("%s\r\n", buf);
@@ -167,6 +165,12 @@ void irc_loop() {
                     }
                 }
             }
+        }
+
+        /* This is super ugly - reloading should be handled in main.c */
+        if (srel) {
+            srel = 0;
+            modules_rescanall();
         }
     }
 
