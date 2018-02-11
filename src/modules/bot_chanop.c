@@ -8,19 +8,12 @@ struct core_ctx *ctx;
 #define KICKCMD "kick"
 #define VOICECMD "voice"
 
-int handle_cmd(const char *cmdname, char *where, char *who, char *args) {
+int handle_cmd(const char *cmdname, struct command_sender who, char *where, char *args) {
     int len;
-    int user_perm_level;
-    char *p = strchr(who, '!');
-    char *h = strchr(who, '@') + 1;
+    char *p;
 
-    *p = '\0';
-
-    user_perm_level = ctx->getperms(h);
-    ctx->log(INFO, "perms", "user `%s` has perms %d", h, user_perm_level);
-
-    if (user_perm_level < PERMS_HOP) {
-        ctx->msgva(where, "%s: Insufficient permissions", who);
+    if (who.permission_level < PERMS_HOP) {
+        ctx->msgva(where, "%s: Insufficient permissions", who.nick);
         return 0;
     }
 

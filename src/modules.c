@@ -23,6 +23,8 @@ struct command_tree {
 
 struct command_tree cmds;
 
+const char *mod_dir;
+
 int modules_register_cmd(const char *cmdname, command_handler handler) {
     struct command_tree *ptr = &cmds;
     char real;
@@ -126,10 +128,17 @@ void modules_check_cmd(char *from, char *where, char *message) {
         if (real == ' ' || real == '\0') {
             /* reached the end, check if there is a command here */
             if (ptr->handler != NULL) {
+                struct command_sender sender;
+                /* Remove the command name */
                 *(message - 1) = '\0';
                 if (real == '\0') message--;
+
+                /* Get command sender info */
+                irc_parsesender(&sender, from);
+                sender.permission_level = permissions_get(sender.host);
+
                 logger_log(INFO, "commands", "Running command %s", message_orig);
-                ptr->handler(message_orig, where, from, message);
+                ptr->handler(message_orig, sender, where, message);
             } else {
                 break;
             }
@@ -260,6 +269,12 @@ void modules_rescanall() {
     struct dirent *dir;
     const char *c;
 
+    /* cd to modules dir */
+    if (chdir(mod_dir)) {
+        logger_log(ERROR, "commands", "error: failed to change to modules directory");
+        return;
+    }
+
     /* check that the modules have not already been loaded */
     if (loaded_use > 0) modules_unloadall();
 
@@ -281,10 +296,13 @@ void modules_rescanall() {
 
     /* clean up */
     closedir(folder);
+    chdir("../");
 }
 
 void modules_unloadall() {
     int i;
+
+    logger_log(INFO, "commands", "unloading all modules...");
 
     /* clean up module lists */
     for (i = 0; i < loaded_use; i++) {
@@ -296,6 +314,7 @@ void modules_unloadall() {
     loaded = realloc(loaded, loaded_len * sizeof(void *));
 
     modules_cmds_clean(&cmds);
+    logger_log(INFO, "commands", "unloaded all modules!");
 }
 
 void modules_deinit() {
@@ -304,13 +323,8 @@ void modules_deinit() {
 }
 
 void modules_init() {
-    const char *mod_dir = getenv("BOT_MODULES_DIR");
-
+    mod_dir = getenv("BOT_MODULES_DIR");
     if (!mod_dir) mod_dir = "modules/";
-
-    if (chdir(mod_dir)) {
-        logger_log(ERROR, "commands", "error: failed to change to modules directory");
-    }
 
     /* initialize loaded variable */
     loaded = (void **)malloc(loaded_len * sizeof(void *));

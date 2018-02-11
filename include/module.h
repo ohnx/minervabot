@@ -5,6 +5,11 @@
 
 /* this file is used by modules */
 
+struct command_sender {
+    const char *nick, *ident, *host;
+    int permission_level;
+};
+
 /**
  * a handler for a command
  * 
@@ -14,7 +19,7 @@
  * @param args other arguments passed to the command
  * @return whether or not the command ran without an error
  */
-typedef int (*command_handler)(const char *cmdname, char *where, char *who, char *args);
+typedef int (*command_handler)(const char *cmdname, struct command_sender who, char *where, char *args);
 
 struct core_ctx {
     /* modules.h commands */

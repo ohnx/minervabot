@@ -57,6 +57,22 @@ void irc_raw(const char *message) {
     net_raw("%s\r\n", message);
 }
 
+void irc_parsesender(struct command_sender *sender, char *str) {
+    char *t;
+
+    sender->nick = str;
+
+    /* set ident */
+    t = strchr(str, '!');
+    if (t) *(t++) = '\0';
+    sender->ident = t;
+
+    /* set host */
+    t = strchr(t ? t : "", '@');
+    if (t) *(t++) = '\0';
+    sender->host = t;
+}
+
 int irc_login(const char *user, const char *realname, const char *nick_t) {
     char buf[513];
     int login_success = 0, nicklen = strlen(nick_t), i, rl, j, o = 0;
