@@ -7,6 +7,7 @@
 #include "irc.h"
 #include "modules.h"
 #include "permissions.h"
+#include "logger.h"
 
 volatile sig_atomic_t done = 0;
 volatile sig_atomic_t srel = 0;
@@ -18,31 +19,38 @@ void cleanup(int signum) {
 
 int main(int argc, char **argv) {
     struct sigaction action;
-    int i, fst = 0;
+    int i, fst = 0, use_ssl = 0;
     const char *nick = getenv("BOT_NICK");
     const char *user = getenv("BOT_USER");
     const char *name = getenv("BOT_NAME");
     const char *host = getenv("BOT_NETWORK_HOST");
     const char *port = getenv("BOT_NETWORK_PORT");
-    const char *nickserv = getenv("BOT_NICKSERV");
+    const char *usessl = getenv("BOT_NETWORK_SSL");
+    const char *netpw = getenv("BOT_NETWORK_PASSWORD");
     cmdprefix = getenv("BOT_PREFIX");
 
     if (nick == NULL || host == NULL || port == NULL) {
-        fprintf(stderr, "error: nick, host, or port not specified.\n");
+        logger_log(ERROR, "main", "nick, host, or port not specified");
         return -__LINE__;
     }
 
-    if (user == NULL) user = nick;
-    if (name == NULL) name = nick;
+    /* default values */
+    if (!user) user = nick;
+    if (!name) name = nick;
+    if (!usessl) usessl = "0";
+    use_ssl = atoi(usessl);
+    if (use_ssl != 1) use_ssl = 0;
 
-    if (argc == 1) fprintf(stderr, "warning: not joining any channels\n");
+    /* warnings */
+    if (argc == 1) logger_log(WARN, "main", "not joining any channels");
+    if (!use_ssl && netpw) logger_log(WARN, "main", "transmitting server password in cleartext");
 
     permissions_init();
 
     modules_init();
     modules_rescanall();
 
-    /* catch sigterms */
+    /* catch signals */
     memset(&action, 0, sizeof(struct sigaction));
     action.sa_handler = cleanup;
     sigaction(SIGTERM, &action, NULL);
@@ -54,33 +62,35 @@ int main(int argc, char **argv) {
 loop_retry:
     if (done) {
         /* program received SIGTERM, clean up modules */
-        fprintf(stderr, "Cleaning up...\n");
+        logger_log(INFO, "main", "cleaning up...");
         modules_deinit();
         permissions_cleanup();
+        logger_log(INFO, "main", "goodnight!");
         return 0;
     }
 
     /* Wait a few (10) seconds before trying to reconnect */
     if (fst++) usleep(10000000);
 
-    net_connect(host, port);
+    /* if failed to connect, try again */
+    if (net_connect(host, port, use_ssl)) goto loop_retry;
 
-    if (!irc_login(user, name, nick)) {
-        fprintf(stderr, "error: failed to connect to server.\n");
+    /* attempt to log in */
+    if (!irc_login(user, name, nick, netpw)) {
+        logger_log(ERROR, "main", "failed to log in to server.");
+        net_disconnect();
         goto loop_retry;
     }
 
-    if (nickserv) {
-        irc_raw(nickserv);
-        /* nickserv is slow... needs 8 seconds to cloak, per my tests */
-        usleep(8000000);
-    }
-
+    /* join all the channels */
     for (i = 1; i < argc; i++) {
         irc_join(argv[i]);
     }
 
+    /* enter main irc loop */
     irc_loop();
+
+    /* the loop quit for some reason... disconnect and try reconnecting! */
     net_disconnect();
 
     goto loop_retry;

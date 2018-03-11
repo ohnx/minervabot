@@ -73,7 +73,7 @@ void irc_parsesender(struct command_sender *sender, char *str) {
     sender->host = t;
 }
 
-int irc_login(const char *user, const char *realname, const char *nick_t) {
+int irc_login(const char *user, const char *realname, const char *nick_t, const char *password) {
     char buf[513];
     int login_success = 0, nicklen = strlen(nick_t), i, rl, j, o = 0;
 
@@ -82,9 +82,14 @@ int irc_login(const char *user, const char *realname, const char *nick_t) {
     if (nick == NULL) return 0; /* OOM */
     memcpy(nick, nick_t, nicklen+1);
 
+    /* check if password given */
+    if (password) net_raw("PASS %s\r\n", password);
+
+    /* send USER and NICK stuff */
     net_raw("USER %s 0 0 :%s\r\n", user, realname);
     net_raw("NICK %s\r\n", nick);
 
+    /* Loop to ensure NICK was valid */
     while ((rl = net_recv()) > 2) {
         for (j = 0; j < rl; j++) {
             buf[o] = sbuf[j];

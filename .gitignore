@@ -1,5 +1,13 @@
-modules/
-!src/modules/
-objs/
+# compiled files
+modules/*.so
+lib/*.a
+objs/*.o
 minervabot
+
+!src/modules/
+
+# valgrind dumps
 vgcore*
+
+# private info
+vars.sh

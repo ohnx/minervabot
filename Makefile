@@ -1,5 +1,5 @@
-CFLAGS+=-Wall -Werror -Iinclude/
-LDFLAGS=-ldl
+CFLAGS+=-Wall -Werror -Iinclude/ -Ilib/mbedtls/include/
+LDFLAGS=-ldl -Llib/ -lmbedtls -lmbedx509 -lmbedcrypto
 OUTPUT=minervabot
 
 # files
@@ -51,8 +51,14 @@ clean:
 
 .PHONY: test
 test: clean debug
-	BOT_NICK=minervabot BOT_USER=minerva BOT_NAME="minervabot" BOT_NETWORK_HOST="irc.freenode.net" BOT_NETWORK_PORT="6667" valgrind --leak-check=full --show-leak-kinds=all ./$(OUTPUT) "#="
+	valgrind --leak-check=full --show-leak-kinds=all ./$(OUTPUT) "#="
 
 .PHONY: testa
 testa: clean asan
-	BOT_NICK=minervabot BOT_USER=minerva BOT_NAME="minervabot" BOT_NETWORK_HOST="irc.freenode.net" BOT_NETWORK_PORT="6667" ./$(OUTPUT) "#="
+	./$(OUTPUT) "#="
+
+# libraries
+lib/libmbedtls.a:
+	-@git submodule update --init --recursive
+	$(MAKE) no_test -C lib/mbedtls
+	cp lib/mbedtls/library/*.a lib/
