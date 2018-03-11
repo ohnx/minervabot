@@ -19,6 +19,7 @@ void cleanup(int signum) {
 
 int main(int argc, char **argv) {
     struct sigaction action;
+    pid_t pid;
     int i, fst = 0, use_ssl = 0;
     const char *nick = getenv("BOT_NICK");
     const char *user = getenv("BOT_USER");
@@ -33,6 +34,9 @@ int main(int argc, char **argv) {
         logger_log(ERROR, "main", "nick, host, or port not specified");
         return -__LINE__;
     }
+
+    pid = getpid();
+    logger_log(INFO, "main", "My PID is %d", pid);
 
     /* default values */
     if (!user) user = nick;

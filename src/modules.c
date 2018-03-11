@@ -129,6 +129,7 @@ void modules_check_cmd(char *from, char *where, char *message) {
             /* reached the end, check if there is a command here */
             if (ptr->handler != NULL) {
                 struct command_sender sender;
+
                 /* Remove the command name */
                 *(message - 1) = '\0';
                 if (real == '\0') message--;

@@ -4,8 +4,6 @@ lib/*.a
 objs/*.o
 minervabot
 
-!src/modules/
-
 # valgrind dumps
 vgcore*
 
