@@ -137,6 +137,7 @@ int irc_login(const char *user, const char *realname, const char *nick_t, const 
 
 void irc_loop() {
     char buf[513];
+    char nickbuf[513];
     char *user, *command, *where, *message, *target;
     int i, j, l, sl, o = -1, start, wordcount;
 
@@ -149,7 +150,7 @@ void irc_loop() {
                 l = o;
                 o = -1;
 
-                printf(">> %s\n", buf);
+                if (verbosity >= 2) printf(">> %s\n", buf);
 
                 if (!strncmp(buf, "PING", 4)) {
                     buf[1] = 'O';
@@ -179,10 +180,22 @@ void irc_loop() {
                     if (!strncmp(command, "PRIVMSG", 7) || !strncmp(command, "NOTICE", 6)) {
                         if (where == NULL || message == NULL) continue;
                         /* want full user if ((sep = strchr(user, '!')) != NULL) user[sep - user] = '\0'; */
-                        if (where[0] == '#' || where[0] == '&' || where[0] == '+' || where[0] == '!') target = where; else target = user;
-                        fprintf(stderr, "[from: %s] [reply-with: %s] [where: %s] [reply-to: %s] %s\n", user, command, where, target, message);
+                        if (where[0] == '#' || where[0] == '&' || where[0] == '+' || where[0] == '!') target = where; else {
+                            /* remove the nick */
+                            char *sep = strchr(user, '!');
+
+                            if (sep == NULL) {
+                                target = user;
+                            } else {
+                                /* copy to buffer */
+                                memcpy(nickbuf, user, sep - user);
+                                nickbuf[sep - user] = '\0';
+                                target = nickbuf;
+                            }
+                        }
+                        if (verbosity >= 1) printf("%s <%s> %s\n", where, user, message);
                         /* check command prefix */
-                        modules_check_cmd(user, where, message);
+                        modules_check_cmd(user, target, message);
                     }
                 }
             }

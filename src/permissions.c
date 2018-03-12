@@ -36,6 +36,7 @@ int permissions_get(const char *host) {
     int perm, len;
     perm = 0;
     len = strlen(host);
+    if (len > 128) return 0;
     memcpy(pbuf, host, len + 1);
 
     logger_log(INFO, "permissions", "checking perms for %s", pbuf);

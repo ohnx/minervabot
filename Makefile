@@ -7,6 +7,7 @@ SRCS=$(wildcard src/*.c)
 OBJS=$(patsubst src/%.c, objs/%.o, $(SRCS))
 SRCS_MOD=$(wildcard src/modules/*.c)
 OUTP_MOD=$(patsubst src/%.c, %.so, $(SRCS_MOD))
+LIBS=lib/libmbedtls.a
 
 # primary rules
 default: objs/modules/ modules/ $(OUTPUT) $(OUTP_MOD)
@@ -32,7 +33,7 @@ objs/%.o: src/%.c
 	@echo "  CC\t$@"
 	@$(CC) $(CFLAGS) -c $< -o $@
 
-$(OUTPUT): $(OBJS)
+$(OUTPUT): $(LIBS) $(OBJS)
 	@echo "  CCLD\t$@"
 	@gcc $^ $(LDFLAGS) -o $@
 
@@ -51,7 +52,9 @@ clean:
 
 .PHONY: test
 test: clean debug
-	valgrind --leak-check=full --show-leak-kinds=all ./$(OUTPUT) "#="
+	valgrind --tool=massif ./$(OUTPUT) "#="
+	#--leak-check=full --show-leak-kinds=all 
+	#--tool=massif
 
 .PHONY: testa
 testa: clean asan

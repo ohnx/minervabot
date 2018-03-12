@@ -11,6 +11,7 @@
 
 volatile sig_atomic_t done = 0;
 volatile sig_atomic_t srel = 0;
+int verbosity = 0;
 
 void cleanup(int signum) {
     if (signum == SIGUSR1) srel = 1;
@@ -24,6 +25,7 @@ int main(int argc, char **argv) {
     const char *nick = getenv("BOT_NICK");
     const char *user = getenv("BOT_USER");
     const char *name = getenv("BOT_NAME");
+    const char *verbositya = getenv("BOT_LOG_VERBOSITY");
     const char *host = getenv("BOT_NETWORK_HOST");
     const char *port = getenv("BOT_NETWORK_PORT");
     const char *usessl = getenv("BOT_NETWORK_SSL");
@@ -44,6 +46,8 @@ int main(int argc, char **argv) {
     if (!usessl) usessl = "0";
     use_ssl = atoi(usessl);
     if (use_ssl != 1) use_ssl = 0;
+    verbosity = atoi(verbositya ? verbositya : "1");
+    if (verbosity > 3 || verbosity < 0) verbosity = 1;
 
     /* warnings */
     if (argc == 1) logger_log(WARN, "main", "not joining any channels");

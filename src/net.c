@@ -9,6 +9,7 @@
 #include "mbedtls/entropy.h"
 #include "mbedtls/ctr_drbg.h"
 #include "mbedtls/debug.h"
+#include "common.h"
 #include "logger.h"
 #include "net.h"
 
@@ -146,15 +147,15 @@ void net_raw(const char *fmt, ...) {
     va_start(ap, fmt);
     vsnprintf(sbuf, 512, fmt, ap);
     va_end(ap);
-    printf("<< %s", sbuf);
+    if (verbosity >= 2) printf("<< %s", sbuf);
     if (use_ssl) mbedtls_ssl_write(&ssl, (const unsigned char *)sbuf, strlen(sbuf));
     else write(conn, sbuf, strlen(sbuf));
 }
 
 void net_raws(char *ptr) {
-    printf("<< %s", ptr);
-    if (use_ssl) mbedtls_ssl_write(&ssl, (const unsigned char *)sbuf, strlen(sbuf));
-    else write(conn, sbuf, strlen(sbuf));
+    if (verbosity >= 2) printf("<< %s", ptr);
+    if (use_ssl) mbedtls_ssl_write(&ssl, (const unsigned char *)ptr, strlen(ptr));
+    else write(conn, ptr, strlen(ptr));
 }
 
 void net_disconnect() {

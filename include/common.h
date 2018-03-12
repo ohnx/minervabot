@@ -7,5 +7,6 @@
 #include <signal.h>
 extern volatile sig_atomic_t done;
 extern volatile sig_atomic_t srel;
+extern int verbosity;
 
 #endif /* __DEBUG_H */

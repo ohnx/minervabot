@@ -22,6 +22,7 @@ The bot reads all config options from environment variables.
 BOT_NICK - Nick that the bot uses
 BOT_USER - The ident for the bot
 BOT_NAME - The realname of the bot
+BOT_LOG_VERBOSITY - The verbosity of the bot on stdout (default to 1, 2 = raw send/receive, 1 = messages only, 0 = nothing)
 BOT_NETWORK_HOST - The host irc server
 BOT_NETWORK_PORT - The port of the irc server
 BOT_NETWORK_SSL - Whether or not to use SSL (default to '0', set to '1' to enable SSL)
