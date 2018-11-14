@@ -4,7 +4,7 @@ It's a modular IRC bot written in C!
 
 ## about
 
-minverabot is a simple single-threaded bot written in C.
+minverabot is a simple multi-threaded bot written in C.
 
 It is the continuation of [an old effort to write an IRC bot](https://github.com/ohnx-archive/athena).
 
@@ -12,6 +12,7 @@ It is the continuation of [an old effort to write an IRC bot](https://github.com
 
 * modular
 * reload modules without restarting the bot
+* commands run in threads (all bot interface functions are threadsafe)
 * SSL support
 
 ## configuration
