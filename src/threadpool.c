@@ -95,8 +95,6 @@ void threadpool_queue(command_handler handler, char *cmdname, char *from, char *
     memcpy(pool[n].args->where, where, d);
     memcpy(pool[n].args->args, args, e);
 
-    //hexDump ("my_str", &my_str, sizeof (my_str));
-
     /* create thread in pool */
     if (pthread_create(&(pool[n].thread), &attrs, threadpool_wrapper, pool[n].args)) {
         logger_log(WARN, "threadpool", "failed to create new thread to run command");
