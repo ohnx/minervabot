@@ -4,6 +4,7 @@
 #include <string.h>
 #include <netdb.h>
 #include <errno.h>
+#include <pthread.h>
 #include "mbedtls/net.h"
 #include "mbedtls/ssl.h"
 #include "mbedtls/entropy.h"
@@ -17,6 +18,7 @@
 int conn;
 char sbuf[512];
 int use_ssl;
+pthread_mutex_t net_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* ssl stuff */
 mbedtls_net_context server_fd;
@@ -144,18 +146,22 @@ int net_recv() {
 
 void net_raw(const char *fmt, ...) {
     va_list ap;
+    pthread_mutex_lock(&net_mutex);
     va_start(ap, fmt);
     vsnprintf(sbuf, 512, fmt, ap);
     va_end(ap);
     if (verbosity >= 2) printf("<< %s", sbuf);
     if (use_ssl) mbedtls_ssl_write(&ssl, (const unsigned char *)sbuf, strlen(sbuf));
     else write(conn, sbuf, strlen(sbuf));
+    pthread_mutex_unlock(&net_mutex);
 }
 
 void net_raws(char *ptr) {
+    pthread_mutex_lock(&net_mutex);
     if (verbosity >= 2) printf("<< %s", ptr);
     if (use_ssl) mbedtls_ssl_write(&ssl, (const unsigned char *)ptr, strlen(ptr));
     else write(conn, ptr, strlen(ptr));
+    pthread_mutex_unlock(&net_mutex);
 }
 
 void net_disconnect() {

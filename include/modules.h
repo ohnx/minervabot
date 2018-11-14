@@ -7,6 +7,6 @@ void modules_check_cmd(char *from, char *where, char *message);
 void modules_rescanall();
 void modules_unloadall();
 void modules_deinit();
-void modules_init();
+int modules_init();
 
 #endif /* __MODULES_H */

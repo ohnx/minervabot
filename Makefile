@@ -1,5 +1,5 @@
 CFLAGS+=-Wall -Werror -Iinclude/ -Ilib/mbedtls/include/
-LDFLAGS=-ldl -Llib/ -lmbedtls -lmbedx509 -lmbedcrypto
+LDFLAGS=-ldl -Llib/ -lmbedtls -lmbedx509 -lmbedcrypto -lpthread
 OUTPUT=minervabot
 
 # files
@@ -42,6 +42,10 @@ modules/%.so: src/modules/%.c
 	@echo "  CCMOD\t$@"
 	@$(CC) $< $(CFLAGS) -fPIC $(LDFLAGS) -shared -o $@
 
+modules/bot_math.so: src/modules/bot_math.c
+	@echo "  CCMOD\t$@"
+	@$(CC) $< $(CFLAGS) -fPIC $(LDFLAGS) -lleo -lm -shared -o $@ -Ilib/leo/include
+
 # misc
 .PHONY: clean
 clean:
@@ -55,6 +59,7 @@ test: clean debug
 	valgrind --tool=massif ./$(OUTPUT) "#="
 	#--leak-check=full --show-leak-kinds=all 
 	#--tool=massif
+	#./minervabot '##ohnx' '##lazy-valoran' '##valoran-botwar' '##defocus'
 
 .PHONY: testa
 testa: clean asan

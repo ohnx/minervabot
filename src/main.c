@@ -38,7 +38,7 @@ int main(int argc, char **argv) {
     }
 
     pid = getpid();
-    logger_log(INFO, "main", "My PID is %d", pid);
+    logger_log(INFO, "main", "my PID is %d", pid);
 
     /* default values */
     if (!user) user = nick;
@@ -53,9 +53,8 @@ int main(int argc, char **argv) {
     if (argc == 1) logger_log(WARN, "main", "not joining any channels");
     if (!use_ssl && netpw) logger_log(WARN, "main", "transmitting server password in cleartext");
 
-    permissions_init();
-
-    modules_init();
+    if (permissions_init()) return -__LINE__;
+    if (modules_init()) return -__LINE__;
     modules_rescanall();
 
     /* catch signals */

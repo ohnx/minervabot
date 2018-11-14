@@ -10,6 +10,7 @@
 #include "modules.h"
 #include "permissions.h"
 #include "irc.h"
+#include "threadpool.h"
 
 /* command prefixes */
 const char *cmdprefix;
@@ -128,18 +129,13 @@ void modules_check_cmd(char *from, char *where, char *message) {
         if (real == ' ' || real == '\0') {
             /* reached the end, check if there is a command here */
             if (ptr->handler != NULL) {
-                struct command_sender sender;
-
-                /* Remove the command name */
+                /* remove the command name */
                 *(message - 1) = '\0';
                 if (real == '\0') message--;
 
-                /* Get command sender info */
-                irc_parsesender(&sender, from);
-                sender.permission_level = permissions_get(sender.host);
-
+                /* run command in threadpool */
                 logger_log(INFO, "commands", "Running command %s", message_orig);
-                ptr->handler(message_orig, sender, where, message);
+                threadpool_queue(ptr->handler, message_orig, from, where, message);
             } else {
                 break;
             }
@@ -209,6 +205,10 @@ void modules_loadmod(const char *mod_file) {
     /* prepend `./` to so */
     len = strlen(mod_file);
     local_file = malloc(len + 3);
+    if (!local_file) {
+        logger_log(WARN, "commands", "system out of memory; failed to load module");
+        return;
+    }
     local_file[0] = '.';
     local_file[1] = '/';
     memcpy(local_file+2, mod_file, len+1);
@@ -238,6 +238,7 @@ void modules_loadmod(const char *mod_file) {
             dlclose(handle);
             return;
         }
+        loaded = tmp;
     }
 
     loaded[loaded_use++] = modules_ctx_new(handle);
@@ -319,16 +320,21 @@ void modules_unloadall() {
 }
 
 void modules_deinit() {
+    threadpool_deinit();
     modules_unloadall();
     free(loaded);
 }
 
-void modules_init() {
+int modules_init() {
     mod_dir = getenv("BOT_MODULES_DIR");
     if (!mod_dir) mod_dir = "modules/";
 
     /* initialize loaded variable */
     loaded = (void **)malloc(loaded_len * sizeof(void *));
+    if (!loaded) {
+        logger_log(ERROR, "commands", "OOM error when initializing");
+        return -1;
+    }
 
     /* get prefix length */
     if (cmdprefix == NULL) {
@@ -336,4 +342,8 @@ void modules_init() {
         cmdprefix = ",";
     }
     cmdprefix_len = strlen(cmdprefix);
+
+    /* initialize threadpool */
+    threadpool_init();
+    return 0;
 }

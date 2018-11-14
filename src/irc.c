@@ -2,10 +2,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
+#include <pthread.h>
 #include "common.h"
 #include "net.h"
 #include "irc.h"
 #include "modules.h"
+
+pthread_mutex_t irc_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void irc_filter(char *str) {
     int len = strlen(str), i;
@@ -22,10 +25,12 @@ void irc_message(const char *chan, const char *message) {
 void irc_message_va(const char *chan, const char *fmt, ...) {
     char *tmp;
     va_list ap;
+    pthread_mutex_lock(&irc_mutex);
     va_start(ap, fmt);
     vsnprintf(sbuf, 512, fmt, ap);
     va_end(ap);
     tmp = strdup(sbuf);
+    pthread_mutex_unlock(&irc_mutex);
     if (tmp) irc_message(chan, tmp);
     free(tmp);
 }
@@ -82,6 +87,8 @@ int irc_login(const char *user, const char *realname, const char *nick_t, const 
     if (nick == NULL) return 0; /* OOM */
     memcpy(nick, nick_t, nicklen+1);
 
+    logger_log(INFO, "irc", "connected to server, logging in...");
+
     /* check if password given */
     if (password) net_raw("PASS %s\r\n", password);
 
@@ -132,6 +139,7 @@ int irc_login(const char *user, const char *realname, const char *nick_t, const 
     }
 
     free(nick);
+    logger_log(INFO, "irc", "successfully identified to server");
     return login_success;
 }
 
@@ -196,6 +204,12 @@ void irc_loop() {
                         if (verbosity >= 1) printf("%s <%s> %s\n", where, user, message);
                         /* check command prefix */
                         modules_check_cmd(user, target, message);
+                    } else if (!strncmp(command, "QUIT", 4)) {
+                        /* special hax */
+                        printf("%s\n", user);
+                        if (!strncmp(user, "WarsawBot", 9)) {
+                            irc_message("##lazy-valoran", "=dammitwarsaw");
+                        }
                     }
                 }
             }

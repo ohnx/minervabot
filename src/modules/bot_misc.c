@@ -13,14 +13,15 @@ int handle_help(const char *cmdname, struct command_sender who, char *where, cha
 }
 
 int handle_hello(const char *cmdname, struct command_sender who, char *where, char *args) {
-    ctx->log(INFO, "hello", "[cmdname: %s] [where: %s] [who: %s!%s@%s] [args: %s]\n", cmdname, where, who.nick, who.ident, who.host, args);
+    ctx->log(INFO, "hello", "[cmdname: %s] [where: %s] [who: %s!%s@%s] [args: %s]", cmdname, where, who.nick, who.ident, who.host, args);
     ctx->msg(where, "hello world!");
     return 0;
 }
 
 int module_init(struct core_ctx *core) {
     ctx = core;
-    return ctx->register_cmd(HELPCMD, &handle_help) + ctx->register_cmd(HELLOCMD, &handle_hello);
+    return ctx->register_cmd(HELPCMD, &handle_help) +
+           ctx->register_cmd(HELLOCMD, &handle_hello);
 }
 
 void module_cleanup() {
