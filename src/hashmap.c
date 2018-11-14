@@ -64,7 +64,11 @@ hashmap *hashmap_new() {
     ret = calloc(1, sizeof(hashmap));
     buckets = calloc(256, sizeof(hashmap_entry));
 
-    if (ret == NULL || buckets == NULL) return NULL;
+    if (ret == NULL || buckets == NULL) {
+        free(ret);
+        free(buckets);
+        return NULL;
+    }
 
     ret->num_entry = 0;
     ret->bucketsize = 256;

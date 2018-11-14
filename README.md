@@ -10,10 +10,10 @@ It is the continuation of [an old effort to write an IRC bot](https://github.com
 
 ## features
 
-* modular
-* reload modules without restarting the bot
-* commands run in threads (all bot interface functions are threadsafe)
-* SSL support
+  * modular
+  * reload modules without restarting the bot
+  * commands run in threads (all bot interface functions are threadsafe)
+  * SSL support
 
 ## configuration
 

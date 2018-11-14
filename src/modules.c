@@ -303,6 +303,7 @@ void modules_rescanall() {
 
 void modules_unloadall() {
     int i;
+    void *tmp;
 
     logger_log(INFO, "commands", "unloading all modules...");
 
@@ -313,7 +314,12 @@ void modules_unloadall() {
     }
     loaded_use = 0;
     loaded_len = 6;
-    loaded = realloc(loaded, loaded_len * sizeof(void *));
+    tmp = realloc(loaded, loaded_len * sizeof(void *));
+    if (!tmp) {
+        logger_log(WARN, "commands", "strange OOM error");
+    } else {
+        loaded = (void **)tmp;
+    }
 
     modules_cmds_clean(&cmds);
     logger_log(INFO, "commands", "unloaded all modules!");

@@ -183,7 +183,7 @@ void irc_loop() {
                         }
                     }
 
-                    if (wordcount < 2) continue;
+                    if (wordcount < 2 || !command) continue;
 
                     if (!strncmp(command, "PRIVMSG", 7) || !strncmp(command, "NOTICE", 6)) {
                         if (where == NULL || message == NULL) continue;

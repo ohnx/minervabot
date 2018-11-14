@@ -56,14 +56,13 @@ clean:
 
 .PHONY: test
 test: clean debug
-	valgrind --tool=massif ./$(OUTPUT) "#="
+	valgrind --tool=massif ./$(OUTPUT) "#/"
 	#--leak-check=full --show-leak-kinds=all 
 	#--tool=massif
-	#./minervabot '##ohnx' '##lazy-valoran' '##valoran-botwar' '##defocus'
 
 .PHONY: testa
 testa: clean asan
-	./$(OUTPUT) "#="
+	./$(OUTPUT) "#/"
 
 # libraries
 lib/libmbedtls.a:
