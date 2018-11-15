@@ -1,6 +1,7 @@
 # compiled files
 modules/*.so
 lib/*.a
+lib/lua-*
 objs/*.o
 minervabot
 

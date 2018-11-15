@@ -19,7 +19,7 @@ int handle_cookie(const char *cmdname, struct command_sender who, char *where, c
     if (*args == 0) args = (char *)who.nick;
     int r = rand() % (sizeof(cookietypes)/sizeof(const char *));
 
-    ctx->msgva(where, "\001ACTION gives %s a %s cookie\001", args, cookietypes[r]);
+    ctx->msgva(where, "\001ACTION gives %s a %s cookie \xf0\x9f\x8d\xaa\001", args, cookietypes[r]);
     return 0;
 }
 

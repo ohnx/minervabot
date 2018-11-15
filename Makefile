@@ -46,6 +46,16 @@ modules/bot_math.so: src/modules/bot_math.c
 	@echo "  CCMOD\t$@"
 	@$(CC) $< $(CFLAGS) -fPIC $(LDFLAGS) -lleo -lm -shared -o $@ -Ilib/leo/include
 
+LUA_V=5.3.5
+lib/liblua.a:
+	cd lib/; curl -R -O http://www.lua.org/ftp/lua-$(LUA_V).tar.gz; tar zxf lua-$(LUA_V).tar.gz
+	cd lib/lua-$(LUA_V)/; make generic
+	cp lib/lua-$(LUA_V)/src/liblua.a lib/
+
+modules/bot_lua.so: src/modules/bot_lua.c lib/liblua.a
+	@echo "  CCMOD\t$@"
+	@$(CC) $< $(CFLAGS) -fPIC $(LDFLAGS) -llua -shared -o $@ -Ilib/lua-$(LUA_V)/src/
+
 # misc
 .PHONY: clean
 clean:
