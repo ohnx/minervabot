@@ -36,7 +36,7 @@ void *threadpool_wrapper(void *varg) {
     /* catch error if setjmp() returns 1 */
     if (setjmp(point) == 1) {
         /* a segfault occurred */
-        logger_log(WARN, "commands", "a segfault occurred while trying to call command %s\n", arg->cmdname);
+        logger_log(WARN, "commands", "a segfault occurred while trying to call command %s", arg->cmdname);
         goto execution_done;
     }
 

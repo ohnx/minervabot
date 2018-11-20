@@ -21,7 +21,6 @@ int handle_segfault(const char *cmdname, struct command_sender who, char *where,
     return *n;
 }
 
-
 int module_init(struct core_ctx *core) {
     ctx = core;
     return ctx->register_cmd(SLEEPCMD, &handle_sleep) + ctx->register_cmd(SEGCMD, &handle_segfault);

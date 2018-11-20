@@ -218,6 +218,7 @@ void modules_loadmod(const char *mod_file) {
     free(local_file);
     if (!handle) {
         logger_log(WARN, "commands", "failed to load module %s: %s", mod_file, dlerror());
+        dlclose(handle);
         return;
     }
     dlerror();
@@ -225,6 +226,7 @@ void modules_loadmod(const char *mod_file) {
     inith = dlsym(handle, "module_init");
     if ((error = dlerror()) != NULL)  {
         logger_log(WARN, "commands", "failed to load module %s: %s", mod_file, error);
+        dlclose(handle);
         return;
     }
 
