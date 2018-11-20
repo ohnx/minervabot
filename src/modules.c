@@ -223,7 +223,7 @@ void modules_loadmod(const char *mod_file) {
     }
     dlerror();
 
-    inith = dlsym(handle, "module_init");
+    *(void **) (&inith) = dlsym(handle, "module_init");
     if ((error = dlerror()) != NULL)  {
         logger_log(WARN, "commands", "failed to load module %s: %s", mod_file, error);
         dlclose(handle);
@@ -256,7 +256,7 @@ void modules_unloadmod(struct core_ctx *ctx) {
     module_cleanup_handler cleanuph;
     char *error;
 
-    cleanuph = dlsym(ctx->dlsym, "module_cleanup");
+    *(void **) (&cleanuph) = dlsym(ctx->dlsym, "module_cleanup");
     if ((error = dlerror()) != NULL)  {
         logger_log(WARN, "commands", "failed clean up module: %s", error);
         dlclose(ctx->dlsym);

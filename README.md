@@ -13,6 +13,7 @@ It is the continuation of [an old effort to write an IRC bot](https://github.com
 * modular
 * reload modules without restarting the bot
 * commands run in threads (all bot interface functions are threadsafe)
+  * Errors in a command don't kill the entire bot
 * SSL support
 
 ## configuration

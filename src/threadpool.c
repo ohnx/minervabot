@@ -30,21 +30,24 @@ void *threadpool_wrapper(void *varg) {
     struct sigaction sa;
     struct threadpool_args *arg = (struct threadpool_args *)varg;
 
-    /* catch segfaults in this thread */
+    /* catch errors in this thread */
     pthread_setspecific(sigsegv_jmp_point, &point);
 
     /* catch error if setjmp() returns 1 */
     if (setjmp(point) == 1) {
-        /* a segfault occurred */
-        logger_log(WARN, "commands", "a segfault occurred while trying to call command %s", arg->cmdname);
+        /* an error occurred */
+        logger_log(WARN, "commands", "an error occurred while trying to call command %s", arg->cmdname);
         goto execution_done;
     }
 
-    /* catch segfaults */
+    /* catch thread-specific errors */
     memset(&sa, 0, sizeof(struct sigaction));
     sigemptyset(&sa.sa_mask);
     sa.sa_flags     = SA_NODEFER;
     sa.sa_sigaction = sigsegv_handler;
+    sigaction(SIGBUS, &sa, NULL);
+    sigaction(SIGFPE, &sa, NULL);
+    sigaction(SIGILL, &sa, NULL);
     sigaction(SIGSEGV, &sa, NULL);
 
     /* cleanup work */
@@ -144,6 +147,7 @@ void threadpool_deinit() {
 
     free(pool);
     pthread_attr_destroy(&attrs);
+    pthread_key_delete(sigsegv_jmp_point);
     pool_len = 8;
 }
 

@@ -1,4 +1,6 @@
 CFLAGS+=-Wall -Werror -Iinclude/ -Ilib/mbedtls/include/
+# not sure the best way to get usleep and signals and stuff other than D_BSD_SOURCE
+CFLAGS+=-std=c99 -pedantic -D_BSD_SOURCE
 LDFLAGS=-ldl -Llib/ -lmbedtls -lmbedx509 -lmbedcrypto -lpthread
 OUTPUT=minervabot
 
