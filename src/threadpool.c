@@ -2,6 +2,8 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <string.h>
+#include <setjmp.h>
+#include <signal.h>
 #include "irc.h"
 #include "permissions.h"
 #include "threadpool.h"
@@ -15,10 +17,35 @@ unsigned char pool_flags;
 struct threadpool_wrapper *pool = NULL;
 pthread_attr_t attrs;
 size_t pool_len = 2;
+pthread_key_t sigsegv_jmp_point;
+
+static void sigsegv_handler(int sig, siginfo_t *siginfo, void *arg) {
+    /* longjmp to the thread-specific point */
+   longjmp(*((sigjmp_buf *)pthread_getspecific(sigsegv_jmp_point)), 1);
+}
 
 void *threadpool_wrapper(void *varg) {
     /* everything here is running in a thread */
+    sigjmp_buf point;
+    struct sigaction sa;
     struct threadpool_args *arg = (struct threadpool_args *)varg;
+
+    /* catch segfaults in this thread */
+    pthread_setspecific(sigsegv_jmp_point, &point);
+
+    /* catch error if setjmp() returns 1 */
+    if (setjmp(point) == 1) {
+        /* a segfault occurred */
+        logger_log(WARN, "commands", "a segfault occurred while trying to call command %s\n", arg->cmdname);
+        goto execution_done;
+    }
+
+    /* catch segfaults */
+    memset(&sa, 0, sizeof(struct sigaction));
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags     = SA_NODEFER;
+    sa.sa_sigaction = sigsegv_handler;
+    sigaction(SIGSEGV, &sa, NULL);
 
     /* cleanup work */
     pthread_cleanup_push(free, varg);
@@ -32,6 +59,7 @@ void *threadpool_wrapper(void *varg) {
     /* run command handler */
     arg->handler(arg->cmdname, arg->sender, arg->where, arg->args);
 
+execution_done:
     /* clean stuff up */
     while (pool_flags & 0x1) {usleep(10000);}
     pool[arg->n].args = NULL;
@@ -134,6 +162,7 @@ int threadpool_init() {
     /* initialize pthreads */
     pthread_attr_init(&attrs);
     pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_DETACHED);
+    pthread_key_create(&sigsegv_jmp_point, NULL);
 
     return 0;
 }

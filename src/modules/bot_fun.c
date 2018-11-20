@@ -12,6 +12,7 @@ struct core_ctx *ctx;
 #define POTATOCMD "potato"
 #define CELEBRATIONCMD "celebrate"
 #define CONFETTICMD "confetti"
+#define PARTYCMD "party"
 
 const char *cookietypes[8] = {"chocolate chip", "oatmeal raisin", "oatmeal chocolate", "oreo", "white chocolate macadamia nut", "peanut butter", "sugar", "ginger"};
 
@@ -49,7 +50,8 @@ int module_init(struct core_ctx *core) {
     srand(time(NULL));
     return ctx->register_cmd(COOKIECMD, &handle_cookie) + ctx->register_cmd(HUGCMD, &handle_hug)
          + ctx->register_cmd(SHRUGCMD, &handle_shrug) + ctx->register_cmd(POTATOCMD, &handle_potato)
-         + ctx->register_cmd(CELEBRATIONCMD, &handle_celebrate) + ctx->register_cmd(CONFETTICMD, &handle_celebrate);
+         + ctx->register_cmd(CELEBRATIONCMD, &handle_celebrate) + ctx->register_cmd(CONFETTICMD, &handle_celebrate)
+         + ctx->register_cmd(PARTYCMD, &handle_celebrate);
 }
 
 void module_cleanup() {
@@ -59,4 +61,5 @@ void module_cleanup() {
     ctx->unregister_cmd(POTATOCMD);
     ctx->unregister_cmd(CELEBRATIONCMD);
     ctx->unregister_cmd(CONFETTICMD);
+    ctx->unregister_cmd(PARTYCMD);
 }

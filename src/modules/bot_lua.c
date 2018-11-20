@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include "module.h"
 
+#if 0
 struct core_ctx *ctx;
 
 int module_init(struct core_ctx *core) {
@@ -15,8 +16,6 @@ int module_init(struct core_ctx *core) {
     struct stat statbuf;
 
     ctx = core;
-
-    /* initialize lua context */
 
     /* open directory */
     if ((dp = opendir(".")) == NULL) {
@@ -33,6 +32,8 @@ int module_init(struct core_ctx *core) {
         /* check that this is a regular file*/
         lstat(entry->d_name, &statbuf);
         if (!S_ISREG(statbuf.st_mode) && !S_ISLNK(statbuf.st_mode)) continue;
+
+        /* initialize new lua context for this file */
 
         /* open the file and parse it */
     }
@@ -54,3 +55,4 @@ void module_cleanup() {
     ctx->unregister_cmd(CELEBRATIONCMD);
     ctx->unregister_cmd(CONFETTICMD);
 }
+#endif
