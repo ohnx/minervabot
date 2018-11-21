@@ -5,6 +5,7 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <string.h>
+#include "common.h"
 #include "logger.h"
 #include "module.h"
 #include "modules.h"
@@ -21,15 +22,17 @@ struct command_tree {
     command_handler handler;
     struct command_tree *children[26];
 };
-
 struct command_tree cmds;
+pthread_mutex_t modules_mutex = PTHREAD_MUTEX_INITIALIZER;
 
+/* module loading */
 const char *mod_dir;
 
 int modules_register_cmd(const char *cmdname, command_handler handler) {
     struct command_tree *ptr = &cmds;
     char real;
 
+    pthread_mutex_lock(&modules_mutex);
     logger_log(INFO, "commands", "registering command `%s`", cmdname);
 
     /* walk the tree! */
@@ -39,12 +42,14 @@ int modules_register_cmd(const char *cmdname, command_handler handler) {
         if (real == 0) {
             /* reached the end! */
             ptr->handler = handler;
+            pthread_mutex_unlock(&modules_mutex);
             return 0;
         } else if (real >= 'A' && real <= 'Z') {
             /* convert to lower case */
             real += 32;
         } else if (real < 'a' || real > 'z') {
             /* invalid character */
+            pthread_mutex_unlock(&modules_mutex);
             return -1;
         }
 
@@ -59,12 +64,15 @@ int modules_register_cmd(const char *cmdname, command_handler handler) {
     }
 
     /* OOM or some other tree walking error */
+    pthread_mutex_unlock(&modules_mutex);
     return -2;
 }
 
 int modules_unregister_cmd(const char *cmdname) {
     struct command_tree *ptr = &cmds;
     char real;
+
+    pthread_mutex_lock(&modules_mutex);
 
     /* walk the tree! */
     while (ptr) {
@@ -73,12 +81,14 @@ int modules_unregister_cmd(const char *cmdname) {
         if (real == 0) {
             /* reached the end! */
             ptr->handler = NULL;
+            pthread_mutex_unlock(&modules_mutex);
             return 0;
         } else if (real >= 'A' && real <= 'Z') {
             /* convert to lower case */
             real += 32;
         } else if (real < 'a' || real > 'z') {
             /* invalid character */
+            pthread_mutex_unlock(&modules_mutex);
             return -1;
         }
 
@@ -89,6 +99,7 @@ int modules_unregister_cmd(const char *cmdname) {
     }
 
     /* command not registered */
+    pthread_mutex_unlock(&modules_mutex);
     return -3;
 }
 
@@ -135,7 +146,7 @@ void modules_check_cmd(char *from, char *where, char *message) {
 
                 /* run command in threadpool */
                 logger_log(INFO, "commands", "Running command %s", message_orig);
-                threadpool_queue(ptr->handler, message_orig, from, where, message);
+                threadpool_queue_cmd(ptr->handler, message_orig, from, where, message);
             } else {
                 break;
             }
@@ -243,13 +254,11 @@ void modules_loadmod(const char *mod_file) {
         loaded = tmp;
     }
 
-    loaded[loaded_use++] = modules_ctx_new(handle);
+    loaded[loaded_use] = modules_ctx_new(handle);
 
-    if ((*inith)(loaded[loaded_use - 1])) {
-        /* failed to init module, so close it */
-        dlclose(handle);
-        loaded[loaded_use--] = NULL;
-    }
+    threadpool_queue_init(mod_file, inith, loaded[loaded_use], loaded + loaded_use);
+
+    loaded_use++;
 }
 
 void modules_unloadmod(struct core_ctx *ctx) {
@@ -260,11 +269,11 @@ void modules_unloadmod(struct core_ctx *ctx) {
     if ((error = dlerror()) != NULL)  {
         logger_log(WARN, "commands", "failed clean up module: %s", error);
         dlclose(ctx->dlsym);
+        free(ctx);
         return;
     }
 
-    (*cleanuph)();
-    dlclose(ctx->dlsym);
+    threadpool_queue_deinit(cleanuph, ctx);
 }
 
 /* public functions */
@@ -311,8 +320,8 @@ void modules_unloadall() {
 
     /* clean up module lists */
     for (i = 0; i < loaded_use; i++) {
-        modules_unloadmod((struct core_ctx *)loaded[i]);
-        free(loaded[i]);
+        if (loaded[i])
+            modules_unloadmod((struct core_ctx *)loaded[i]);
     }
     loaded_use = 0;
     loaded_len = 6;
@@ -328,9 +337,9 @@ void modules_unloadall() {
 }
 
 void modules_deinit() {
-    threadpool_deinit();
     modules_unloadall();
     free(loaded);
+    threadpool_deinit();
 }
 
 int modules_init() {

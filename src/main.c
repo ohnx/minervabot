@@ -59,6 +59,8 @@ int main(int argc, char **argv) {
 
     /* catch signals */
     memset(&action, 0, sizeof(struct sigaction));
+    sigemptyset(&action.sa_mask);
+    action.sa_flags = SA_NODEFER;
     action.sa_handler = cleanup;
     sigaction(SIGTERM, &action, NULL);
     sigaction(SIGHUP, &action, NULL);
@@ -96,6 +98,8 @@ loop_retry:
 
     /* enter main irc loop */
     irc_loop();
+
+    logger_log(WARN, "main", "bot disconnected from server... reconnecting...");
 
     /* the loop quit for some reason... disconnect and try reconnecting! */
     net_disconnect();
