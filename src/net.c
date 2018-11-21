@@ -16,8 +16,10 @@
 
 /* regular stuff */
 int conn;
+char rbuf[512];
 char sbuf[512];
 int use_ssl;
+/* mutex for sbuf */
 pthread_mutex_t net_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 /* ssl stuff */
@@ -140,8 +142,8 @@ int net_connect(const char *host, const char *port, int use_ssl_copy) {
 
 int net_recv() {
     static int c;
-    if (use_ssl) c = mbedtls_ssl_read(&ssl, (unsigned char *)sbuf, 512);
-    else c = read(conn, sbuf, 512);
+    if (use_ssl) c = mbedtls_ssl_read(&ssl, (unsigned char *)rbuf, 512);
+    else c = read(conn, rbuf, 512);
 
     if (c == -1) {
         switch (errno) {
@@ -155,7 +157,6 @@ int net_recv() {
 
     return c;
 }
-
 
 void net_raw(const char *fmt, ...) {
     va_list ap;

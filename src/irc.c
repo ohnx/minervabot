@@ -2,13 +2,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
-#include <pthread.h>
 #include "common.h"
 #include "net.h"
 #include "irc.h"
 #include "modules.h"
-
-pthread_mutex_t irc_mutex = PTHREAD_MUTEX_INITIALIZER;
 
 void irc_filter(char *str) {
     int len = strlen(str), i;
@@ -23,16 +20,12 @@ void irc_message(const char *chan, const char *message) {
 }
 
 void irc_message_va(const char *chan, const char *fmt, ...) {
-    char *tmp;
+    char buf[513];
     va_list ap;
-    pthread_mutex_lock(&irc_mutex);
     va_start(ap, fmt);
-    vsnprintf(sbuf, 512, fmt, ap);
+    vsnprintf(buf, 512, fmt, ap);
     va_end(ap);
-    tmp = strdup(sbuf);
-    pthread_mutex_unlock(&irc_mutex);
-    if (tmp) irc_message(chan, tmp);
-    free(tmp);
+    irc_message(chan, buf);
 }
 
 void irc_action(const char *chan, const char *message) {
@@ -99,8 +92,8 @@ int irc_login(const char *user, const char *realname, const char *nick_t, const 
     /* Loop to ensure NICK was valid */
     while ((rl = net_recv()) > 2) {
         for (j = 0; j < rl; j++) {
-            buf[o] = sbuf[j];
-            if ((j > 0 && sbuf[j] == '\n' && sbuf[j - 1] == '\r') || o == 512) {
+            buf[o] = rbuf[j];
+            if ((j > 0 && rbuf[j] == '\n' && rbuf[j - 1] == '\r') || o == 512) {
                 /* found a line */
                 buf[o] = '\0';
                 /* handle initial codes */
@@ -152,8 +145,8 @@ void irc_loop() {
     while (!done && (sl = net_recv())) {
         for (i = 0; i < sl; i++) {
             o++;
-            buf[o] = sbuf[i];
-            if ((i > 0 && sbuf[i] == '\n' && sbuf[i - 1] == '\r') || o == 512) {
+            buf[o] = rbuf[i];
+            if ((i > 0 && rbuf[i] == '\n' && rbuf[i - 1] == '\r') || o == 512) {
                 buf[o == 512 ? o + 1 : o - 1] = '\0';
                 l = o;
                 o = -1;
@@ -206,7 +199,6 @@ void irc_loop() {
                         modules_check_cmd(user, target, message);
                     } else if (!strncmp(command, "QUIT", 4)) {
                         /* special hax */
-                        printf("%s\n", user);
                         if (!strncmp(user, "WarsawBot", 9)) {
                             irc_message("##lazy-valoran", "=dammitwarsaw");
                         }
