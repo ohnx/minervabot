@@ -99,7 +99,7 @@ loop_retry:
     /* enter main irc loop */
     irc_loop();
 
-    logger_log(WARN, "main", "bot disconnected from server... reconnecting...");
+    logger_log(WARN, "main", "bot disconnected from server");
 
     /* the loop quit for some reason... disconnect and try reconnecting! */
     net_disconnect();

@@ -19,6 +19,7 @@ int conn;
 char rbuf[512];
 char sbuf[512];
 int use_ssl;
+
 /* mutex for sbuf */
 pthread_mutex_t net_mutex = PTHREAD_MUTEX_INITIALIZER;
 
