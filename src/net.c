@@ -30,6 +30,9 @@ mbedtls_ssl_config conf;
 int net_connect_nossl(const char *host, const char *port) {
     struct addrinfo hints, *res;
     int ret;
+    struct timeval max_wait;
+    max_wait.tv_sec = 324;
+    max_wait.tv_usec = 324000;
 
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_INET;
@@ -53,6 +56,10 @@ int net_connect_nossl(const char *host, const char *port) {
         return ret;
     }
 
+    /* set up read timeout */
+    setsockopt(conn, SOL_SOCKET, SO_SNDTIMEO, &max_wait, sizeof(struct timeval));
+
+    /* clean up */
     freeaddrinfo(res);
 
     return 0;
@@ -60,6 +67,9 @@ int net_connect_nossl(const char *host, const char *port) {
 
 int net_connect_ssl(const char *host, const char *port) {
     int ret;
+    struct timeval max_wait;
+    max_wait.tv_sec = 324;
+    max_wait.tv_usec = 324000;
 
     /* initialize all the storage structures */
     mbedtls_net_init(&server_fd);
@@ -102,6 +112,9 @@ int net_connect_ssl(const char *host, const char *port) {
     }
 
     mbedtls_ssl_set_bio(&ssl, &server_fd, mbedtls_net_send, mbedtls_net_recv, NULL);
+
+    /* set timeout */
+    setsockopt(server_fd.fd, SOL_SOCKET, SO_SNDTIMEO, &max_wait, sizeof(struct timeval));
 
     /* begin handshake attempt */
     while ((ret = mbedtls_ssl_handshake(&ssl))) {
