@@ -10,6 +10,9 @@ struct core_ctx *ctx;
 
 #define BTCCMD "btc"
 #define ETHCMD "eth"
+#define XMRCMD "xmr"
+#define USDCMD "usd"
+#define CADCMD "cad"
 
 struct MemoryStruct {
   char *memory;
@@ -37,9 +40,10 @@ static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, voi
 
 
 int handle_cmd(const char *cmdname, struct command_sender who, char *where, char *args) {
-    CURL *curl_handle;
+  CURL *curl_handle;
   CURLcode res;
- 
+  const char *url;
+
   struct MemoryStruct chunk;
  
   chunk.memory = malloc(1);  /* will be grown as needed by the realloc above */ 
@@ -50,8 +54,20 @@ int handle_cmd(const char *cmdname, struct command_sender who, char *where, char
   /* init the curl session */ 
   curl_handle = curl_easy_init();
  
-  /* specify URL to get */ 
-  curl_easy_setopt(curl_handle, CURLOPT_URL, "https://api.coindesk.com/v1/bpi/currentprice.json");
+  /* specify URL to get */
+  if (!strcmp(cmdname, BTCCMD)) {
+    url = "https://min-api.cryptocompare.com/data/price?fsym=BTC&tsyms=BTC,ETH,XMR,USD,CAD";
+  } else if (!strcmp(cmdname, ETHCMD)) {
+    url = "https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=BTC,ETH,XMR,USD,CAD";
+  } else if (!strcmp(cmdname, XMRCMD)) {
+    url = "https://min-api.cryptocompare.com/data/price?fsym=XMR&tsyms=BTC,ETH,XMR,USD,CAD";
+  } else if (!strcmp(cmdname, USDCMD)) {
+    url = "https://min-api.cryptocompare.com/data/price?fsym=USD&tsyms=BTC,ETH,XMR,USD,CAD";
+  } else if (!strcmp(cmdname, CADCMD)) {
+    url = "https://min-api.cryptocompare.com/data/price?fsym=CAD&tsyms=BTC,ETH,XMR,USD,CAD";
+  }
+
+  curl_easy_setopt(curl_handle, CURLOPT_URL, url);
  
   /* send all data to this function  */ 
   curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
@@ -69,7 +85,7 @@ int handle_cmd(const char *cmdname, struct command_sender who, char *where, char
   /* check for errors */ 
   if(res != CURLE_OK) {
     ctx->log(WARN, "bot_cryptocurrency", "curl_easy_perform() failed: %s", curl_easy_strerror(res));
- ctx->msg(where, "Error fetching price information.");
+    ctx->msg(where, "Error fetching price information.");
   } else {
     /*
      * Now, our chunk.memory points to a memory block that is chunk.size
@@ -78,8 +94,8 @@ int handle_cmd(const char *cmdname, struct command_sender who, char *where, char
      * Do something nice with it!
      */ 
 	int r;
-	double btc_price, request_amnt;
-	char *btc_price_a;
+	double btc_price = 0, eth_price = 0, xmr_price = 0, usd_price = 0, cad_price = 0, request_amnt;
+	char *price_a;
     jsmn_parser p;
 	jsmntok_t t[128]; /* We expect no more than 128 tokens */
 
@@ -88,13 +104,13 @@ int handle_cmd(const char *cmdname, struct command_sender who, char *where, char
 	jsmn_init(&p);
 	r = jsmn_parse(&p, chunk.memory, chunk.size, t, sizeof(t)/sizeof(t[0]));
 	if (r < 0) {
-		ctx->log(WARN, "bot_cryptocurrency", "Failed to parse JSON: %d\n", r);
+		ctx->log(WARN, "bot_cryptocurrency", "Failed to parse JSON: %d", r);
 		return 1;
 	}
 
 	/* Assume the top-level element is an object */
 	if (r < 1 || t[0].type != JSMN_OBJECT) {
-		ctx->log(WARN, "bot_cryptocurrency", "Failed to parse JSON: Object expected\n");
+		ctx->log(WARN, "bot_cryptocurrency", "Failed to parse JSON: Object expected");
 		return 1;
 	}
 
@@ -104,18 +120,38 @@ int handle_cmd(const char *cmdname, struct command_sender who, char *where, char
         printf("%.*s\n", t[i].end-t[i].start, chunk.memory + t[i].start);
     }*/
 
-    btc_price_a = strndup(chunk.memory + t[26].start, t[26].end-t[26].start);
-    printf("btc_price_a: %s\n", btc_price_a);
-    btc_price = atof(btc_price_a);
-    free(btc_price_a);
+    printf("%d\n", r);
+
+    price_a = strndup(chunk.memory + t[2].start, t[2].end-t[2].start);
+    btc_price = atof(price_a);
+    free(price_a);
+
+    price_a = strndup(chunk.memory + t[4].start, t[4].end-t[4].start);
+    eth_price = atof(price_a);
+    free(price_a);
+
+    price_a = strndup(chunk.memory + t[6].start, t[6].end-t[6].start);
+    xmr_price = atof(price_a);
+    free(price_a);
+
+    price_a = strndup(chunk.memory + t[8].start, t[8].end-t[8].start);
+    usd_price = atof(price_a);
+    free(price_a);
+
+    price_a = strndup(chunk.memory + t[10].start, t[10].end-t[10].start);
+    cad_price = atof(price_a);
+    free(price_a);
+
     if (strlen(args) > 1) {
         /* args given */
         request_amnt = atof(args);
-        ctx->msgva(where, "Current $BTC price: %lf USD. %lf BTC = %lf USD.", btc_price, request_amnt, request_amnt * btc_price);
     } else {
-        /* no args */
-        ctx->msgva(where, "Current $BTC price: %lf USD.", btc_price);
+        request_amnt = 1;
     }
+    
+    ctx->msgva(where, "%lf %s = %lf BTC / %lf ETH / %lf XMR / %.2lf USD / %.2lf CAD", request_amnt, cmdname,
+                    request_amnt * btc_price, request_amnt * eth_price, request_amnt * xmr_price,
+                    request_amnt * usd_price, request_amnt * cad_price);
   }
  
   /* cleanup curl stuff */ 
@@ -131,9 +167,18 @@ int handle_cmd(const char *cmdname, struct command_sender who, char *where, char
 
 int module_init(struct core_ctx *core) {
     ctx = core;
-    return ctx->register_cmd(BTCCMD, &handle_cmd);
+    return ctx->register_cmd(BTCCMD, &handle_cmd) +
+    ctx->register_cmd(ETHCMD, &handle_cmd) +
+    ctx->register_cmd(XMRCMD, &handle_cmd) +
+    ctx->register_cmd(USDCMD, &handle_cmd) +
+    ctx->register_cmd(CADCMD, &handle_cmd)
+    ;
 }
 
 void module_cleanup() {
     ctx->unregister_cmd(BTCCMD);
+    ctx->unregister_cmd(ETHCMD);
+    ctx->unregister_cmd(XMRCMD);
+    ctx->unregister_cmd(USDCMD);
+    ctx->unregister_cmd(CADCMD);
 }
