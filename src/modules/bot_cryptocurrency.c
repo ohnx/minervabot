@@ -8,11 +8,11 @@
 
 struct core_ctx *ctx;
 
-#define BTCCMD "btc"
-#define ETHCMD "eth"
-#define XMRCMD "xmr"
-#define USDCMD "usd"
-#define CADCMD "cad"
+#define BTCCMD "BTC"
+#define ETHCMD "ETH"
+#define XMRCMD "XMR"
+#define USDCMD "USD"
+#define CADCMD "CAD"
 
 struct MemoryStruct {
   char *memory;
@@ -43,9 +43,33 @@ int handle_cmd(const char *cmdname, struct command_sender who, char *where, char
   CURL *curl_handle;
   CURLcode res;
   const char *url;
+  char sym[4];
 
   struct MemoryStruct chunk;
  
+  memcpy(sym, cmdname, 4);
+  sym[3] = '\0';
+  /* to uppercase converstion */
+  if (sym[0] > 'Z') sym[0] -= 0x20;
+  if (sym[1] > 'Z') sym[1] -= 0x20;
+  if (sym[2] > 'Z') sym[2] -= 0x20;
+ 
+  /* specify URL to get */
+  if (!strcmp(sym, BTCCMD)) {
+    url = "https://min-api.cryptocompare.com/data/price?fsym=BTC&tsyms=BTC,ETH,XMR,USD,CAD";
+  } else if (!strcmp(sym, ETHCMD)) {
+    url = "https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=BTC,ETH,XMR,USD,CAD";
+  } else if (!strcmp(sym, XMRCMD)) {
+    url = "https://min-api.cryptocompare.com/data/price?fsym=XMR&tsyms=BTC,ETH,XMR,USD,CAD";
+  } else if (!strcmp(sym, USDCMD)) {
+    url = "https://min-api.cryptocompare.com/data/price?fsym=USD&tsyms=BTC,ETH,XMR,USD,CAD";
+  } else if (!strcmp(sym, CADCMD)) {
+    url = "https://min-api.cryptocompare.com/data/price?fsym=CAD&tsyms=BTC,ETH,XMR,USD,CAD";
+  } else {
+      /* some sort of programming error */
+      ctx->log(WARN, "bot_cryptocurrency", "??? weird error.");
+  }
+
   chunk.memory = malloc(1);  /* will be grown as needed by the realloc above */ 
   chunk.size = 0;    /* no data at this point */ 
  
@@ -53,19 +77,6 @@ int handle_cmd(const char *cmdname, struct command_sender who, char *where, char
  
   /* init the curl session */ 
   curl_handle = curl_easy_init();
- 
-  /* specify URL to get */
-  if (!strcmp(cmdname, BTCCMD)) {
-    url = "https://min-api.cryptocompare.com/data/price?fsym=BTC&tsyms=BTC,ETH,XMR,USD,CAD";
-  } else if (!strcmp(cmdname, ETHCMD)) {
-    url = "https://min-api.cryptocompare.com/data/price?fsym=ETH&tsyms=BTC,ETH,XMR,USD,CAD";
-  } else if (!strcmp(cmdname, XMRCMD)) {
-    url = "https://min-api.cryptocompare.com/data/price?fsym=XMR&tsyms=BTC,ETH,XMR,USD,CAD";
-  } else if (!strcmp(cmdname, USDCMD)) {
-    url = "https://min-api.cryptocompare.com/data/price?fsym=USD&tsyms=BTC,ETH,XMR,USD,CAD";
-  } else if (!strcmp(cmdname, CADCMD)) {
-    url = "https://min-api.cryptocompare.com/data/price?fsym=CAD&tsyms=BTC,ETH,XMR,USD,CAD";
-  }
 
   curl_easy_setopt(curl_handle, CURLOPT_URL, url);
  
@@ -120,7 +131,7 @@ int handle_cmd(const char *cmdname, struct command_sender who, char *where, char
         printf("%.*s\n", t[i].end-t[i].start, chunk.memory + t[i].start);
     }*/
 
-    printf("%d\n", r);
+    /*printf("%d\n", r);*/
 
     price_a = strndup(chunk.memory + t[2].start, t[2].end-t[2].start);
     btc_price = atof(price_a);
@@ -149,7 +160,7 @@ int handle_cmd(const char *cmdname, struct command_sender who, char *where, char
         request_amnt = 1;
     }
     
-    ctx->msgva(where, "%lf %s = %lf BTC / %lf ETH / %lf XMR / %.2lf USD / %.2lf CAD", request_amnt, cmdname,
+    ctx->msgva(where, "%lf %s = %lf BTC / %lf ETH / %lf XMR / %.2lf USD / %.2lf CAD", request_amnt, sym,
                     request_amnt * btc_price, request_amnt * eth_price, request_amnt * xmr_price,
                     request_amnt * usd_price, request_amnt * cad_price);
   }

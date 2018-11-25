@@ -165,18 +165,20 @@ void net_raw(const char *fmt, ...) {
     va_start(ap, fmt);
     vsnprintf(sbuf, 512, fmt, ap);
     va_end(ap);
-    if (verbosity >= 2) printf("<< %s", sbuf);
-    if (use_ssl) mbedtls_ssl_write(&ssl, (const unsigned char *)sbuf, strlen(sbuf));
-    else write(conn, sbuf, strlen(sbuf));
+    _net_raws(sbuf);
     pthread_mutex_unlock(&net_mutex);
 }
 
 void net_raws(char *ptr) {
     pthread_mutex_lock(&net_mutex);
+    _net_raws(ptr);
+    pthread_mutex_unlock(&net_mutex);
+}
+
+void _net_raws(char *ptr) {
     if (verbosity >= 2) printf("<< %s", ptr);
     if (use_ssl) mbedtls_ssl_write(&ssl, (const unsigned char *)ptr, strlen(ptr));
     else write(conn, ptr, strlen(ptr));
-    pthread_mutex_unlock(&net_mutex);
 }
 
 void net_disconnect() {

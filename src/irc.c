@@ -155,7 +155,8 @@ void irc_loop() {
 
                 if (!strncmp(buf, "PING", 4)) {
                     buf[1] = 'O';
-                    net_raw("%s\r\n", buf);
+                    _net_raws(buf);
+                    _net_raws("\r\n");
                 } else if (buf[0] == ':') {
                     wordcount = 0;
                     user = command = where = message = NULL;
@@ -200,7 +201,7 @@ void irc_loop() {
                     } else if (!strncmp(command, "QUIT", 4)) {
                         /* special hax */
                         if (!strncmp(user, "WarsawBot", 9)) {
-                            irc_message("##lazy-valoran", "=dammitwarsaw");
+                            _net_raws("PRIVMSG ##hellomouse :=dammitwarsaw\r\n");
                         }
                     }
                 }

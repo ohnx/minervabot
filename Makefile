@@ -62,6 +62,10 @@ modules/bot_cryptocurrency.so: src/modules/bot_cryptocurrency.c lib/jsmn/jsmn.c
 	@echo "  CCMOD\t$@"
 	@$(CC) $^ $(CFLAGS) -fPIC $(LDFLAGS) -lcurl -shared -o $@ -Ilib/jsmn/
 
+modules/bot_geoip.so: src/modules/bot_geoip.c lib/jsmn/jsmn.c
+	@echo "  CCMOD\t$@"
+	@$(CC) $^ $(CFLAGS) -fPIC $(LDFLAGS) -lcurl -shared -o $@ -Ilib/jsmn/
+
 # misc
 .PHONY: clean
 clean:

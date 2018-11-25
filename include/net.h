@@ -7,6 +7,7 @@ int net_connect(const char *host, const char *port, int use_ssl_copy);
 int net_recv();
 void net_raw(const char *fmt, ...);
 void net_raws(char *ptr);
+void _net_raws(char *ptr);
 void net_disconnect();
 
 #endif /* __NET_H */
