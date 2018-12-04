@@ -59,7 +59,6 @@ int handle_cmd(const char *cmdname, struct command_sender who, char *where, char
   errcode = getaddrinfo(args, NULL, &hints, &addr_lst);
   if (errcode != 0) {
       ctx->msgva(where, "%s: Please specify a valid IP.", who.nick);
-      freeaddrinfo(addr_lst);
       return 0;
   }
 
@@ -99,7 +98,7 @@ int handle_cmd(const char *cmdname, struct command_sender who, char *where, char
   /* check for errors */ 
   if(res != CURLE_OK) {
     ctx->log(WARN, "bot_geoip", "curl_easy_perform() failed: %s", curl_easy_strerror(res));
-    ctx->msg(where, "Error fetching price information.");
+    ctx->msg(where, "Error fetching IP information.");
   } else {
     /*
      * Now, our chunk.memory points to a memory block that is chunk.size

@@ -1,6 +1,7 @@
 CFLAGS+=-Wall -Werror -Iinclude/ -Ilib/mbedtls/include/
 # not sure the best way to get usleep and signals and stuff other than D_BSD_SOURCE
 CFLAGS+=-std=c99 -pedantic -D_BSD_SOURCE
+MOD_CFLAGS+=-Ilib/jsmn/ -lcurl -Llib/ -ljsmn
 LDFLAGS=-ldl -Llib/ -lmbedtls -lmbedx509 -lmbedcrypto -lpthread
 OUTPUT=minervabot
 
@@ -9,7 +10,7 @@ SRCS=$(wildcard src/*.c)
 OBJS=$(patsubst src/%.c, objs/%.o, $(SRCS))
 SRCS_MOD=$(wildcard src/modules/*.c)
 OUTP_MOD=$(patsubst src/%.c, %.so, $(SRCS_MOD))
-LIBS=lib/libmbedtls.a
+LIBS=lib/libmbedtls.a lib/libjsmn.a
 
 # primary rules
 default: objs/modules/ modules/ $(OUTPUT) $(OUTP_MOD)
@@ -42,7 +43,7 @@ $(OUTPUT): $(LIBS) $(OBJS)
 # modules
 modules/%.so: src/modules/%.c
 	@echo "  CCMOD\t$@"
-	@$(CC) $< $(CFLAGS) -fPIC $(LDFLAGS) -shared -o $@
+	@$(CC) $< $(CFLAGS) $(MOD_CFLAGS) -fPIC $(LDFLAGS) -shared -o $@
 
 modules/bot_math.so: src/modules/bot_math.c
 	@echo "  CCMOD\t$@"
@@ -57,14 +58,6 @@ lib/liblua.a:
 modules/bot_lua.so: src/modules/bot_lua.c lib/liblua.a
 	@echo "  CCMOD\t$@"
 	@$(CC) $< $(CFLAGS) -fPIC $(LDFLAGS) -llua -shared -o $@ -Ilib/lua-$(LUA_V)/src/
-
-modules/bot_cryptocurrency.so: src/modules/bot_cryptocurrency.c lib/jsmn/jsmn.c
-	@echo "  CCMOD\t$@"
-	@$(CC) $^ $(CFLAGS) -fPIC $(LDFLAGS) -lcurl -shared -o $@ -Ilib/jsmn/
-
-modules/bot_geoip.so: src/modules/bot_geoip.c lib/jsmn/jsmn.c
-	@echo "  CCMOD\t$@"
-	@$(CC) $^ $(CFLAGS) -fPIC $(LDFLAGS) -lcurl -shared -o $@ -Ilib/jsmn/
 
 # misc
 .PHONY: clean
@@ -89,3 +82,8 @@ lib/libmbedtls.a:
 	-@git submodule update --init --recursive
 	$(MAKE) no_test -C lib/mbedtls
 	cp lib/mbedtls/library/*.a lib/
+
+lib/libjsmn.a:
+	-@git submodule update --init --recursive
+	CFLAGS=-fPIC $(MAKE) all -C lib/jsmn
+	cp lib/jsmn/*.a lib/
