@@ -2,17 +2,17 @@
 #include <string.h>
 #include "module.h"
 
-struct core_ctx *ctx;
+static struct core_ctx *ctx;
 
 #define HELPCMD "help"
 #define HELLOCMD "hello"
 
-int handle_help(const char *cmdname, struct command_sender who, char *where, char *args) {
+static int handle_help(const char *cmdname, struct command_sender who, char *where, char *args) {
     ctx->msgva(where, "%s: Hiya! I'm a bot written by ohnx. I'm open source! Please visit https://github.com/ohnx/minervabot :)", who.nick);
     return 0;
 }
 
-int handle_hello(const char *cmdname, struct command_sender who, char *where, char *args) {
+static int handle_hello(const char *cmdname, struct command_sender who, char *where, char *args) {
     ctx->log(INFO, "hello", "[cmdname: %s] [where: %s] [who: %s!%s@%s] [args: %s]", cmdname, where, who.nick, who.ident, who.host, args);
     ctx->msg(where, "hello world!");
     return 0;

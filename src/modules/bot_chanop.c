@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include "module.h"
 
-struct core_ctx *ctx;
+static struct core_ctx *ctx;
 
 #define MODECMD "mode"
 #define BANCMD "ban"
@@ -11,10 +11,9 @@ struct core_ctx *ctx;
 #define OPCMD "op"
 #define VOICECMD "voice"
 
-char cmd_buf[513];
-
-int handle_cmd(const char *cmdname, struct command_sender who, char *where, char *args) {
+static int handle_cmd(const char *cmdname, struct command_sender who, char *where, char *args) {
     int len;
+    char cmd_buf[513];
     char *p;
 
     if (who.permission_level < PERMS_HOP) {

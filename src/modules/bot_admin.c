@@ -3,14 +3,14 @@
 #include <signal.h>
 #include "module.h"
 
-struct core_ctx *ctx;
+static struct core_ctx *ctx;
 
 #define RELOADCMD "reload"
 #define JOINCMD "join"
 #define PARTCMD "part"
 #define RAWCMD "raw"
 
-int handle_reload(const char *cmdname, struct command_sender who, char *where, char *args) {
+static int handle_reload(const char *cmdname, struct command_sender who, char *where, char *args) {
     if (who.permission_level < PERMS_OWNER) {
         ctx->msgva(where, "%s: Insufficient permissions", who.nick);
         return 0;
@@ -23,7 +23,7 @@ int handle_reload(const char *cmdname, struct command_sender who, char *where, c
     return 0;
 }
 
-int handle_cmd(const char *cmdname, struct command_sender who, char *where, char *args) {
+static int handle_cmd(const char *cmdname, struct command_sender who, char *where, char *args) {
     if (who.permission_level < PERMS_ADMIN) {
         ctx->msgva(where, "%s: Insufficient permissions", who.nick);
         return 0;
@@ -40,7 +40,7 @@ int handle_cmd(const char *cmdname, struct command_sender who, char *where, char
     return 0;
 }
 
-int handle_raw(const char *cmdname, struct command_sender who, char *where, char *args) {
+static int handle_raw(const char *cmdname, struct command_sender who, char *where, char *args) {
     if (who.permission_level < PERMS_OWNER) {
         ctx->msgva(where, "%s: Insufficient permissions", who.nick);
         return 0;

@@ -5,9 +5,12 @@
 #include <setjmp.h>
 #include <signal.h>
 #include <dlfcn.h>
+#include <execinfo.h>
 #include "irc.h"
 #include "permissions.h"
 #include "threadpool.h"
+
+#define MAX_STACK_LEVELS 24
 
 struct threadpool_wrapper {
     void *args;
@@ -19,8 +22,16 @@ struct threadpool_wrapper *pool = NULL;
 pthread_attr_t attrs;
 size_t pool_len = 2;
 pthread_key_t sigsegv_jmp_point;
+int print_st;
 
 static void sigsegv_handler(int sig, siginfo_t *siginfo, void *arg) {
+    if (print_st) {
+        /* this is technically undefined behaviour */
+        void *buffer[MAX_STACK_LEVELS];
+        int levels = backtrace(buffer, MAX_STACK_LEVELS);
+
+        backtrace_symbols_fd(buffer + 1, levels - 1, 2);
+    }
     /* longjmp to the thread-specific point */
    longjmp(*((sigjmp_buf *)pthread_getspecific(sigsegv_jmp_point)), 1);
 }
@@ -287,6 +298,8 @@ void threadpool_deinit() {
 }
 
 int threadpool_init() {
+    char *p;
+
     if (!pool)
         pool = malloc(sizeof(struct threadpool_wrapper) * pool_len);
 
@@ -294,6 +307,9 @@ int threadpool_init() {
         logger_log(ERROR, "threadpool", "OOM error when initializing");
         return -1;
     }
+
+    /* check if print stacktrace */
+    print_st = (p = getenv("BOT_ENABLE_DEBUG")) && (atoi(p) == 1);
 
     /* initialize memory */
     memset(pool, 0, sizeof(struct threadpool_wrapper)*pool_len);

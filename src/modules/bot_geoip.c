@@ -9,97 +9,52 @@
 #include <curl/curl.h>
 #include <jsmn.h>
 #include "module.h"
+#include "mod_common.h"
 
-struct core_ctx *ctx;
-const char *api_key;
+static struct core_ctx *ctx;
+static const char *api_key;
 
 #define GEOIPCMD "geoip"
 #define IPCMD "ip"
 #define HOSTCMD "host"
 
-struct MemoryStruct {
-  char *memory;
-  size_t size;
-};
- 
-static size_t WriteMemoryCallback(void *contents, size_t size, size_t nmemb, void *userp) {
-  size_t realsize = size * nmemb;
-  struct MemoryStruct *mem = (struct MemoryStruct *)userp;
- 
-  char *ptr = realloc(mem->memory, mem->size + realsize + 1);
-  if (ptr == NULL) {
-    /* out of memory! */ 
-    printf("not enough memory (realloc returned NULL)\n");
-    return 0;
-  }
- 
-  mem->memory = ptr;
-  memcpy(&(mem->memory[mem->size]), contents, realsize);
-  mem->size += realsize;
-  mem->memory[mem->size] = 0;
- 
-  return realsize;
-}
+static int handle_cmd(const char *cmdname, struct command_sender who, char *where, char *args) {
+    CURLcode res;
+    int errcode;
+    void *ptr;
+    char url[512];
+    char ip_buf[INET6_ADDRSTRLEN];
+    struct addrinfo hints, *addr_lst;
+    struct buffer chunk;
 
-int handle_cmd(const char *cmdname, struct command_sender who, char *where, char *args) {
-  CURL *curl_handle;
-  CURLcode res;
-  int errcode;
-  void *ptr;
-  char url[512];
-  char ip_buf[INET6_ADDRSTRLEN];
-  struct addrinfo hints, *addr_lst;
-  struct MemoryStruct chunk;
+    memset(&hints, 0, sizeof (hints));
+    hints.ai_family = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags |= AI_CANONNAME;
 
-  memset (&hints, 0, sizeof (hints));
-  hints.ai_family = AF_UNSPEC;
-  hints.ai_socktype = SOCK_STREAM;
-  hints.ai_flags |= AI_CANONNAME;
+    errcode = getaddrinfo(args, NULL, &hints, &addr_lst);
+    if (errcode != 0) {
+        ctx->msgva(where, "%s: Please specify a valid IP.", who.nick);
+        return 0;
+    }
 
-  errcode = getaddrinfo(args, NULL, &hints, &addr_lst);
-  if (errcode != 0) {
-      ctx->msgva(where, "%s: Please specify a valid IP.", who.nick);
-      return 0;
-  }
+    if (addr_lst->ai_addr->sa_family == AF_INET) {
+        ptr = &((struct sockaddr_in *) addr_lst->ai_addr)->sin_addr;
+    } else {
+        ptr = &((struct sockaddr_in6 *) addr_lst->ai_addr)->sin6_addr;
+    }
 
-  if (addr_lst->ai_addr->sa_family == AF_INET) {
-      ptr = &((struct sockaddr_in *) addr_lst->ai_addr)->sin_addr;
-  } else {
-      ptr = &((struct sockaddr_in6 *) addr_lst->ai_addr)->sin6_addr;
-  }
+    inet_ntop(addr_lst->ai_addr->sa_family, ptr, ip_buf, INET6_ADDRSTRLEN);
+    snprintf(url, 512, "http://ipinfo.io/%s/json?token=%s", ip_buf, api_key);
+    freeaddrinfo(addr_lst);
 
-  inet_ntop(addr_lst->ai_addr->sa_family, ptr, ip_buf, INET6_ADDRSTRLEN);
+    /* send the HTTP request */
+    if ((res = send_http_request(url, &chunk)) != CURLE_OK) {
+        ctx->log(WARN, "bot_geoip", "curl_easy_perform() failed: %s", curl_easy_strerror(res));
+        ctx->msg(where, "Error fetching IP information.");
+		return 1;
+    }
 
-  snprintf(url, 512, "http://ipinfo.io/%s/json?token=%s", ip_buf, api_key);
-
-  chunk.memory = malloc(1);  /* will be grown as needed by the realloc above */ 
-  chunk.size = 0;    /* no data at this point */ 
- 
-  curl_global_init(CURL_GLOBAL_ALL);
- 
-  /* init the curl session */ 
-  curl_handle = curl_easy_init();
-
-  curl_easy_setopt(curl_handle, CURLOPT_URL, url);
- 
-  /* send all data to this function  */ 
-  curl_easy_setopt(curl_handle, CURLOPT_WRITEFUNCTION, WriteMemoryCallback);
- 
-  /* we pass our 'chunk' struct to the callback function */ 
-  curl_easy_setopt(curl_handle, CURLOPT_WRITEDATA, (void *)&chunk);
- 
-  /* some servers don't like requests that are made without a user-agent
-     field, so we provide one */ 
-  curl_easy_setopt(curl_handle, CURLOPT_USERAGENT, "libcurl/1.0");
-
-  /* get it! */ 
-  res = curl_easy_perform(curl_handle);
- 
-  /* check for errors */ 
-  if(res != CURLE_OK) {
-    ctx->log(WARN, "bot_geoip", "curl_easy_perform() failed: %s", curl_easy_strerror(res));
-    ctx->msg(where, "Error fetching IP information.");
-  } else {
     /*
      * Now, our chunk.memory points to a memory block that is chunk.size
      * bytes big and contains the remote file.
@@ -166,23 +121,12 @@ int handle_cmd(const char *cmdname, struct command_sender who, char *where, char
         }
         if (++i < r -1)
             strncat(url, ", ", 2);
-        /* if we segfault here it's ok :) */
-        //if (!strcmp())
+        /* if we segfault here it's ok :) so i didn't 100% check this code */
     }
     ctx->msg(where, url);
-  }
  
-  /* cleanup curl stuff */ 
-  curl_easy_cleanup(curl_handle);
- 
-  free(chunk.memory);
- 
-  /* we're done with libcurl, so clean it up */ 
-  curl_global_cleanup();
-
-  freeaddrinfo(addr_lst);
-
-  return 0;
+    free(chunk.memory);
+    return 0;
 }
 
 int module_init(struct core_ctx *core) {

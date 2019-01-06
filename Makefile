@@ -1,8 +1,8 @@
 CFLAGS+=-Wall -Werror -Iinclude/ -Ilib/mbedtls/include/
 # not sure the best way to get usleep and signals and stuff other than D_BSD_SOURCE
-CFLAGS+=-std=c99 -pedantic -D_BSD_SOURCE
-MOD_CFLAGS+=-Ilib/jsmn/ -lcurl -Llib/ -ljsmn
-LDFLAGS=-ldl -Llib/ -lmbedtls -lmbedx509 -lmbedcrypto -lpthread
+CFLAGS+=-std=c99 -pedantic -D_BSD_SOURCE -g -O0
+MOD_CFLAGS+=-Ilib/jsmn/ -Llib/ -ljsmn -Ilib/parson/ -lparson -Isrc/modules/
+LDFLAGS=-ldl -Llib/ -lmbedtls -lmbedx509 -lmbedcrypto -lpthread -lcurl
 OUTPUT=minervabot
 
 # files
@@ -10,7 +10,7 @@ SRCS=$(wildcard src/*.c)
 OBJS=$(patsubst src/%.c, objs/%.o, $(SRCS))
 SRCS_MOD=$(wildcard src/modules/*.c)
 OUTP_MOD=$(patsubst src/%.c, %.so, $(SRCS_MOD))
-LIBS=lib/libmbedtls.a lib/libjsmn.a
+LIBS=lib/libmbedtls.a lib/libjsmn.a lib/libparson.a
 
 # primary rules
 default: objs/modules/ modules/ $(OUTPUT) $(OUTP_MOD)
@@ -44,6 +44,10 @@ $(OUTPUT): $(LIBS) $(OBJS)
 modules/%.so: src/modules/%.c
 	@echo "  CCMOD\t$@"
 	@$(CC) $< $(CFLAGS) $(MOD_CFLAGS) -fPIC $(LDFLAGS) -shared -o $@
+
+modules/mod_common.so: src/modules/mod_common.c
+	@echo "  CCMOD\t$@"
+	@$(CC) $< $(CFLAGS) $(MOD_CFLAGS) -Wl,--export-dynamic -fPIC $(LDFLAGS) -shared -o $@
 
 modules/bot_math.so: src/modules/bot_math.c
 	@echo "  CCMOD\t$@"
@@ -87,3 +91,9 @@ lib/libjsmn.a:
 	-@git submodule update --init --recursive
 	CFLAGS=-fPIC $(MAKE) all -C lib/jsmn
 	cp lib/jsmn/*.a lib/
+
+lib/libparson.a:
+	-@git submodule update --init --recursive
+	$(CC) -c -Wall -Wextra -std=c89 -pedantic-errors -fPIC lib/parson/parson.c -o lib/parson.o
+	$(AR) rc $@ lib/parson.o
+	rm lib/parson.o

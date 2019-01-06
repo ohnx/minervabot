@@ -3,7 +3,7 @@
 #include <unistd.h>
 #include "module.h"
 
-struct core_ctx *ctx;
+static struct core_ctx *ctx;
 
 #define SLEEPCMD "sleep"
 #define SEGCMD "segfault"
@@ -11,26 +11,26 @@ struct core_ctx *ctx;
 #define CALLBAD "callbad"
 #define SPAMCMD "spam"
 
-int handle_sleep(const char *cmdname, struct command_sender who, char *where, char *args) {
+static int handle_sleep(const char *cmdname, struct command_sender who, char *where, char *args) {
     usleep(10000000);
     ctx->msg(where, "Zzz... done!");
     return 0;
 }
 
-int handle_segfault(const char *cmdname, struct command_sender who, char *where, char *args) {
+static int handle_segfault(const char *cmdname, struct command_sender who, char *where, char *args) {
     int *n = NULL;
     n += *n;
     return *n;
 }
 
-int handle_divzero(const char *cmdname, struct command_sender who, char *where, char *args) {
+static int handle_divzero(const char *cmdname, struct command_sender who, char *where, char *args) {
     int a = 10;
     int b = 0;
     a = a/b;
     return a/b;
 }
 
-int handle_spam(const char *cmdname, struct command_sender who, char *where, char *args) {
+static int handle_spam(const char *cmdname, struct command_sender who, char *where, char *args) {
     if (who.permission_level < PERMS_OWNER) {
         ctx->msgva(where, "%s: Insufficient permissions", who.nick);
         return 0;

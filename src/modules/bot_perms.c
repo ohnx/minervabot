@@ -4,12 +4,12 @@
 #include "module.h"
 #include "perms.h"
 
-struct core_ctx *ctx;
+static struct core_ctx *ctx;
 
 #define SETPERMS_CMD "setp"
 #define GETPERMS_CMD "getp"
 
-int handle_cmd(const char *cmdname, struct command_sender who, char *where, char *args) {
+static int handle_cmd(const char *cmdname, struct command_sender who, char *where, char *args) {
     int perm_level;
     char *t;
 

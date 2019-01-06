@@ -5,6 +5,7 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <string.h>
+#include <curl/curl.h>
 #include "common.h"
 #include "logger.h"
 #include "module.h"
@@ -225,7 +226,7 @@ void modules_loadmod(const char *mod_file) {
     memcpy(local_file+2, mod_file, len+1);
 
     dlerror();
-    handle = dlopen(local_file, RTLD_LAZY);
+    handle = dlopen(local_file, RTLD_LAZY|RTLD_GLOBAL);
     free(local_file);
     if (!handle) {
         logger_log(WARN, "commands", "failed to load module %s: %s", mod_file, dlerror());
@@ -340,6 +341,7 @@ void modules_deinit() {
     modules_unloadall();
     free(loaded);
     threadpool_deinit();
+    curl_global_cleanup();
 }
 
 int modules_init() {
@@ -362,5 +364,9 @@ int modules_init() {
 
     /* initialize threadpool */
     threadpool_init();
+
+    /* initialize CURL */
+    curl_global_init(CURL_GLOBAL_ALL);
+
     return 0;
 }

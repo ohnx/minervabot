@@ -5,20 +5,20 @@
 #include "syard.h"
 #include "rpn_calc.h"
 
-struct core_ctx *ctx;
+static struct core_ctx *ctx;
 
 #define CALCCMD "calc"
 #define EVALCMD "eval"
 
-double ans = 0;
+static double ans = 0;
 
-char *func_wl[] = {
+static char *func_wl[] = {
     "sin", "cos", "tan", "asin", "acos", "atan", "atan2", "exp", "exp2",
     "exp10", "log", "log10", "log2", "logb", "pow", "sqrt", "cbrt", "hypot",
     "expm1", "log1p", "sinh", "cosh", "tanh", "asinh", "acosh", "atanh", "erf",
     "erfc", "lgamma", "gamma", "tgamma", "j0", "j1", "y0", "y1", "fabs", "fmod", NULL};
 
-double variable_resolver(const char* name) {
+static double variable_resolver(const char* name) {
     switch (*name) {
     case 'e':
         if (!name[1]) return 2.7182818285;
@@ -34,7 +34,7 @@ double variable_resolver(const char* name) {
     return 0;
 }
 
-int handle_calc(const char *cmdname, struct command_sender who, char *where, char *args) {
+static int handle_calc(const char *cmdname, struct command_sender who, char *where, char *args) {
     queue *q;
     double *r;
 
