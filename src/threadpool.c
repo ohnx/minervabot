@@ -285,7 +285,7 @@ void threadpool_deinit() {
     pool_flags |= 0x1;
     for (n = 0; n < pool_len; n++) {
         if (pool[n].args) {
-            pthread_cancel(pool[n].thread);
+            pthread_join(pool[n].thread, NULL);
             pool[n].args = NULL;
         }
     }
