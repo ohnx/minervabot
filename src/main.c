@@ -10,12 +10,10 @@
 #include "logger.h"
 
 volatile sig_atomic_t done = 0;
-volatile sig_atomic_t srel = 0;
 int verbosity = 0;
 
 void cleanup(int signum) {
-    if (signum == SIGUSR1) srel = 1;
-    else done = 1;
+    done = 1;
 }
 
 int main(int argc, char **argv) {
@@ -65,7 +63,6 @@ int main(int argc, char **argv) {
     sigaction(SIGTERM, &action, NULL);
     sigaction(SIGHUP, &action, NULL);
     sigaction(SIGINT, &action, NULL);
-    sigaction(SIGUSR1, &action, NULL);
 
     /* network stuff */
 loop_retry:

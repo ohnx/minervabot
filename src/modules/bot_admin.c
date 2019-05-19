@@ -16,7 +16,7 @@ static int handle_reload(const char *cmdname, struct command_sender who, char *w
         return 0;
     }
 
-    ctx->msg(where, "Reloading modules");
+    ctx->msg(where, "Oops, not 100% implemented yet.");
 
     raise(SIGUSR1);
 

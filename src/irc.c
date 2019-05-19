@@ -198,20 +198,9 @@ void irc_loop() {
                         if (verbosity >= 1) printf("%s <%s> %s\n", where, user, message);
                         /* check command prefix */
                         modules_check_cmd(user, target, message);
-                    } else if (!strncmp(command, "QUIT", 4)) {
-                        /* special hax */
-                        if (!strncmp(user, "WarsawBot", 9)) {
-                            _net_raws("PRIVMSG ##hellomouse :=dammitwarsaw\r\n");
-                        }
                     }
                 }
             }
-        }
-
-        /* This is super ugly - reloading should be handled in main.c */
-        if (srel) {
-            srel = 0;
-            modules_rescanall();
         }
     }
 

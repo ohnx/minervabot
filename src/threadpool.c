@@ -110,7 +110,7 @@ void *threadpool_wrapper_init(void *varg) {
 
 execution_failed:
     /* execution failed, close handler and stuff */
-    logger_log(WARN, "commands", "an error occurred while trying to call initialize module %s", arg->modname);
+    logger_log(WARN, "commands", "an error occurred while trying to call initialize module %s", arg->ctx->fn);
     *(arg->ctx_pos) = NULL;
     dlclose((arg->ctx)->dlsym);
     free(arg->ctx);
@@ -148,6 +148,7 @@ void *threadpool_wrapper_deinit(void *varg) {
 
 execution_done:
     /* clean stuff up */
+    *(arg->ctx_pos) = NULL;
     dlclose((arg->ctx)->dlsym);
     free(arg->ctx);
     while (pool_flags & 0x1) {usleep(10000);}
@@ -227,7 +228,7 @@ void threadpool_queue_cmd(command_handler handler, char *cmdname, char *from, ch
     }
 }
 
-void threadpool_queue_init(const char *modname, module_init_handler handler, struct core_ctx *ctx, void **ctx_pos) {
+void threadpool_queue_init(struct core_ctx *ctx, module_init_handler handler, void **ctx_pos) {
     size_t n;
 
     /* find space in queue to place this thread handler */
@@ -242,7 +243,6 @@ void threadpool_queue_init(const char *modname, module_init_handler handler, str
 
     /* set correct data */
     ((struct threadpool_init_args *)pool[n].args)->n = n;
-    ((struct threadpool_init_args *)pool[n].args)->modname = modname;
     ((struct threadpool_init_args *)pool[n].args)->handler = handler;
     ((struct threadpool_init_args *)pool[n].args)->ctx = ctx;
     ((struct threadpool_init_args *)pool[n].args)->ctx_pos = ctx_pos;
@@ -254,7 +254,7 @@ void threadpool_queue_init(const char *modname, module_init_handler handler, str
     }
 }
 
-void threadpool_queue_deinit(module_cleanup_handler handler, struct core_ctx *ctx) {
+void threadpool_queue_deinit(module_cleanup_handler handler, struct core_ctx *ctx, void **ctx_pos, int wait) {
     size_t n;
 
     /* find space in queue to place this thread handler */
@@ -271,15 +271,19 @@ void threadpool_queue_deinit(module_cleanup_handler handler, struct core_ctx *ct
     ((struct threadpool_deinit_args *)pool[n].args)->n = n;
     ((struct threadpool_deinit_args *)pool[n].args)->handler = handler;
     ((struct threadpool_deinit_args *)pool[n].args)->ctx = ctx;
+    ((struct threadpool_deinit_args *)pool[n].args)->ctx_pos = ctx_pos;
 
     /* create thread in pool */
     if (pthread_create(&(pool[n].thread), &attrs, threadpool_wrapper_deinit, pool[n].args)) {
         logger_log(WARN, "threadpool", "failed to create new thread to deinit module");
         return;
     }
+
+    /* sometimes we want to wait for the deinit to finish */
+    if (wait) pthread_join(pool[n].thread, NULL);
 }
 
-void threadpool_deinit() {
+void threadpool_waitall() {
     size_t n;
 
     pool_flags |= 0x1;
@@ -290,6 +294,10 @@ void threadpool_deinit() {
         }
     }
     pool_flags ^= 0x1;
+}
+
+void threadpool_deinit() {
+    threadpool_waitall();
 
     free(pool);
     pthread_attr_destroy(&attrs);
@@ -300,24 +308,25 @@ void threadpool_deinit() {
 int threadpool_init() {
     char *p;
 
-    if (!pool)
-        pool = malloc(sizeof(struct threadpool_wrapper) * pool_len);
-
     if (!pool) {
-        logger_log(ERROR, "threadpool", "OOM error when initializing");
-        return -1;
+        /* allocate memory */
+        pool = malloc(sizeof(struct threadpool_wrapper) * pool_len);
+        if (!pool) {
+            logger_log(ERROR, "threadpool", "OOM error when initializing");
+            return -1;
+        }
+
+        /* initialize pthreads */
+        pthread_attr_init(&attrs);
+        pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_DETACHED);
+        pthread_key_create(&sigsegv_jmp_point, NULL);
     }
 
     /* check if print stacktrace */
     print_st = (p = getenv("BOT_ENABLE_DEBUG")) && (atoi(p) == 1);
 
     /* initialize memory */
-    memset(pool, 0, sizeof(struct threadpool_wrapper)*pool_len);
-
-    /* initialize pthreads */
-    pthread_attr_init(&attrs);
-    pthread_attr_setdetachstate(&attrs, PTHREAD_CREATE_DETACHED);
-    pthread_key_create(&sigsegv_jmp_point, NULL);
+    memset(pool, 0, sizeof(struct threadpool_wrapper) * pool_len);
 
     return 0;
 }

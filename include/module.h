@@ -63,6 +63,8 @@ struct core_ctx {
     /* internal stuff */
     /* handle from dlopen */
     void *dlsym;
+    /* filename */
+    char *fn;
 };
 
 /**
