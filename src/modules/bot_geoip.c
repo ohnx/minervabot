@@ -117,6 +117,7 @@ static int handle_cmd(const char *cmdname, struct command_sender who, char *wher
             ip_buf[6] = '\x9f';
             ip_buf[7] = '\x87';
             ip_buf[8] = '\xa6' + *(chunk.memory + t[i+1].start + 1) - 'A';
+            ip_buf[9] = '\0';
             strncat(url, ip_buf, 10);
         }
         if (++i < r -1)
