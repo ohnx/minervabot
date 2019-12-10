@@ -36,13 +36,7 @@ BOT_OWNER_HOST - The host of the owner (if omitted, there is no owner)
 
 ## how to reload modules
 
-To reload modules, send a SIGUSR1 to the bot's PID. e.g.
-
-```
-kill -USR1 <bot pid>
-```
-
-The bot outputs its PID when it launches.
+When a file in the modules directory is modified, it is automatically re-loaded.
 
 ## developing modules
 

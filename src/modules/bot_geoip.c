@@ -87,22 +87,22 @@ static int handle_cmd(const char *cmdname, struct command_sender who, char *wher
         if (!strncmp("region", chunk.memory + t[i].start, t[i].end-t[i].start) ||
             !strncmp("country", chunk.memory + t[i].start, t[i].end-t[i].start)) {
         } else if (!strncmp("city", chunk.memory + t[i].start, t[i].end-t[i].start)) {
-            strncat(url, "\x02Location\x0f: ", 12);
+            strncat(url, "\x02Location\x0f: ", 13);
         } else if (!strncmp("loc", chunk.memory + t[i].start, t[i].end-t[i].start)) {
-            strncat(url, "\002Coordinates\x0f: ", 15);
+            strncat(url, "\002Coordinates\x0f: ", 16);
         } else if (!strncmp("org", chunk.memory + t[i].start, t[i].end-t[i].start)) {
-            strncat(url, "\x02ISP\x0f: ", 7);
+            strncat(url, "\x02ISP\x0f: ", 8);
         } else if (!strncmp("ip", chunk.memory + t[i].start, t[i].end-t[i].start)) {
-            strncat(url, "\x02IP\x0f: ", 6);
+            strncat(url, "\x02IP\x0f: ", 7);
         } else {
-            strncat(url, "\x02", 1);
+            strncat(url, "\x02", 2);
             *(chunk.memory + t[i].start) -= 'a' - 'A';
             strncat(url, chunk.memory + t[i].start, t[i].end-t[i].start);
             *(chunk.memory + t[i].start) += 'a' - 'A';
-            strncat(url, "\x0f: ", 3);
+            strncat(url, "\x0f: ", 4);
         }
         if (t[i+1].end == t[i+1].start) {
-            strncat(url, "[unknown]", 9);
+            strncat(url, "[unknown]", 10);
         } else {
             strncat(url, chunk.memory + t[i+1].start, t[i+1].end-t[i+1].start);
         }
@@ -117,10 +117,10 @@ static int handle_cmd(const char *cmdname, struct command_sender who, char *wher
             ip_buf[6] = '\x9f';
             ip_buf[7] = '\x87';
             ip_buf[8] = '\xa6' + *(chunk.memory + t[i+1].start + 1) - 'A';
-            strncat(url, ip_buf, 9);
+            strncat(url, ip_buf, 10);
         }
         if (++i < r -1)
-            strncat(url, ", ", 2);
+            strncat(url, ", ", 3);
         /* if we segfault here it's ok :) so i didn't 100% check this code */
     }
     ctx->msg(where, url);
