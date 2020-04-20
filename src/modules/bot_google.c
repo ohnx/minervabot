@@ -68,6 +68,7 @@ static int handle_cmd(const char *cmdname, struct command_sender who, char *wher
      * Do something nice with it!
      */ 
     ctx->log(INFO, "bot_google", "%lu bytes retrieved. Parsing...", (unsigned long)chunk.size);
+    ctx->log(INFO, "bot_google", "%s", chunk.memory);
     if (chunk.size < 30) {
         ctx->msgva(where, "Translation failed.");
         goto done;
@@ -113,8 +114,11 @@ static int handle_cmd(const char *cmdname, struct command_sender who, char *wher
 
     /* also check the language stuff */
     if (orig_lang == gdansk) {
-        chunk.memory[chunk.size - 4] = '\0';
-        orig_lang = &chunk.memory[chunk.size - 6];
+        orig_lang = chunk.memory + chunk.size - 1;
+        while (*orig_lang != '[' && orig_lang > chunk.memory) orig_lang--;
+        orig_lang += 2;
+        last_idx = strchr(orig_lang, '"');
+        *last_idx = '\0';
     }
     ctx->msgva(where, "%s to %s: %s", orig_lang, dest_lang, url);
 
