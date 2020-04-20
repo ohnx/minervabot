@@ -68,7 +68,6 @@ static int handle_cmd(const char *cmdname, struct command_sender who, char *wher
      * Do something nice with it!
      */ 
     ctx->log(INFO, "bot_google", "%lu bytes retrieved. Parsing...", (unsigned long)chunk.size);
-    ctx->log(INFO, "bot_google", "%s", chunk.memory);
     if (chunk.size < 30) {
         ctx->msgva(where, "Translation failed.");
         goto done;
