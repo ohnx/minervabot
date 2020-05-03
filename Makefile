@@ -49,7 +49,7 @@ modules/mod_common.so: src/modules/mod_common.c
 	@echo "  CCMOD\t$@"
 	@$(CC) $< $(CFLAGS) $(MOD_CFLAGS) -Wl,--export-dynamic -fPIC $(LDFLAGS) -shared -o $@
 
-modules/bot_math.so: src/modules/bot_math.c
+modules/bot_math.so: src/modules/bot_math.c lib/libleo.a
 	@echo "  CCMOD\t$@"
 	@$(CC) $< $(CFLAGS) -fPIC $(LDFLAGS) -lleo -lm -shared -o $@ -Ilib/leo/include
 

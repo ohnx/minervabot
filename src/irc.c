@@ -198,6 +198,8 @@ void irc_loop() {
                         if (verbosity >= 1) printf("%s <%s> %s\n", where, user, message);
                         /* check command prefix */
                         modules_check_cmd(user, target, message);
+                    } else if (!strncmp(command, "PONG", 4)) {
+                        /* PONG reply to our ping */
                     }
                 }
             }
